@@ -1,0 +1,24 @@
+{
+  "brand": "Voolt3D",
+  "note": "Hex aproximados para referência visual/prompt. Ajuste nomes e cores conforme os carretéis que você tem.",
+  "filaments": [
+    { "id": "branco", "name": "Branco", "line": "PLA", "hex": "#F5F5F2" },
+    { "id": "branco-dental", "name": "Branco Dental", "line": "PLA", "hex": "#EFEBDD" },
+    { "id": "preto", "name": "Preto", "line": "PLA", "hex": "#1C1C1C" },
+    { "id": "cinza-claro", "name": "Cinza Claro", "line": "PLA Velvet", "hex": "#BDBDBD" },
+    { "id": "cinza-grafite", "name": "Cinza Grafite", "line": "PLA", "hex": "#4A4D52" },
+    { "id": "vermelho", "name": "Vermelho", "line": "PLA", "hex": "#C8102E" },
+    { "id": "laranja", "name": "Laranja", "line": "PLA", "hex": "#F26B1D" },
+    { "id": "amarelo", "name": "Amarelo", "line": "PLA", "hex": "#F7D117" },
+    { "id": "bege-caucasiano", "name": "Bege Caucasiano", "line": "PLA", "hex": "#E8C9A6" },
+    { "id": "marrom", "name": "Marrom", "line": "PLA", "hex": "#6B4226" },
+    { "id": "rosa", "name": "Rosa", "line": "PLA", "hex": "#F08CAE" },
+    { "id": "rosa-bebe", "name": "Rosa Bebê", "line": "PLA Velvet", "hex": "#F6C1C7" },
+    { "id": "roxo", "name": "Roxo", "line": "PLA", "hex": "#6A3D9A" },
+    { "id": "azul", "name": "Azul", "line": "PLA", "hex": "#1F4FB4" },
+    { "id": "azul-cyan", "name": "Azul Cyan", "line": "PLA", "hex": "#1BA8D9" },
+    { "id": "verde", "name": "Verde", "line": "PLA", "hex": "#2E9B45" },
+    { "id": "verde-oliva", "name": "Verde Oliva", "line": "PLA Velvet", "hex": "#6B7A3A" },
+    { "id": "dourado-silk", "name": "Dourado", "line": "PLA V-Silk", "hex": "#C9A227", "finish": "silk metallic sheen" }
+  ]
+}

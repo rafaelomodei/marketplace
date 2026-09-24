@@ -1,0 +1,15 @@
+{
+  "shopee": {
+    "name": "Shopee",
+    "targets": [
+      { "id": "1x1", "label": "1:1 (1200×1200)", "width": 1200, "height": 1200 },
+      { "id": "3x4", "label": "3:4 (1200×1600)", "width": 1200, "height": 1600 }
+    ]
+  },
+  "mercadolivre": {
+    "name": "Mercado Livre",
+    "targets": [
+      { "id": "1x1", "label": "1:1 (1200×1200)", "width": 1200, "height": 1200 }
+    ]
+  }
+}
