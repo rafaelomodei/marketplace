@@ -190,7 +190,10 @@ export function listProducts(): ProductSummary[] {
   });
 }
 
-export function getProduct(slug: string) {
+/** Everything about one product: folder stage, meta, images and the latest jobs. */
+export type ProductDetail = { slug: string; stage: Stage; meta: ProductMeta; images: ImageRow[]; jobs: JobRow[] };
+
+export function getProduct(slug: string): ProductDetail {
   syncProduct(slug);
   const { stage } = requireProduct(slug);
   const d = db();

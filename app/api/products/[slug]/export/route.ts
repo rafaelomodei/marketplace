@@ -1,8 +1,4 @@
 import { handle } from "@/lib/api";
-import { exportImages } from "@/lib/export";
+import { exportImagesAction, runAction } from "@/lib/actions";
 
-export const POST = (req: Request) =>
-  handle(async () => {
-    const { imageIds, marketplace, targetIds, mode } = await req.json();
-    return { created: await exportImages({ imageIds, marketplace, targetIds, mode }) };
-  });
+export const POST = (req: Request) => handle(async () => runAction(exportImagesAction, await req.json()));

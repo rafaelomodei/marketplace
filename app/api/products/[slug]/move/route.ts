@@ -1,11 +1,7 @@
 import { handle } from "@/lib/api";
-import { HttpError, moveProduct } from "@/lib/products";
+import { moveProductAction, runAction } from "@/lib/actions";
 
 type Ctx = { params: Promise<{ slug: string }> };
 
 export const POST = (req: Request, { params }: Ctx) =>
-  handle(async () => {
-    const { stage } = await req.json();
-    if (stage !== "create" && stage !== "ready") throw new HttpError(400, "stage inválido");
-    moveProduct((await params).slug, stage);
-  });
+  handle(async () => runAction(moveProductAction, { slug: (await params).slug, stage: (await req.json()).stage }));

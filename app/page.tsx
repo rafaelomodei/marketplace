@@ -1,15 +1,31 @@
 "use client";
 
-import Link from "next/link";
+import { ArrowRight, Camera, Download, MousePointerClick, PackageOpen, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { api, Badge, Button, Card, fileUrl, Spinner } from "@/components/ui";
+import { ProductCard } from "@/components/studio";
+import {
+  Alert,
+  Badge,
+  Button,
+  Container,
+  EmptyState,
+  FeatureGrid,
+  Heading,
+  Icon,
+  Input,
+  Lead,
+  PaintedBackdrop,
+  SectionHeader,
+  Spinner,
+  type Feature,
+} from "@/components/ui";
+import { api } from "@/lib/client/api";
 import type { ProductSummary } from "@/lib/products";
+import { STEPS } from "@/lib/workflow";
 
-const COLUMNS = [
-  { stage: "create", title: "Em criação", hint: "products/create" },
-  { stage: "ready", title: "Prontos", hint: "products/ready" },
-] as const;
+const STEP_ICONS = [Camera, Wand2, MousePointerClick, Download];
+const HOW_IT_WORKS: Feature[] = STEPS.map((s, i) => ({ icon: STEP_ICONS[i], title: `${i + 1}. ${s.title}`, description: s.description }));
 
 export default function Home() {
   const router = useRouter();
@@ -30,7 +46,7 @@ export default function Home() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) return document.getElementById("novo-nome")?.focus();
     setCreating(true);
     try {
       const { slug } = await api<{ slug: string }>("/api/products", { method: "POST", json: { name } });
@@ -41,72 +57,102 @@ export default function Home() {
     }
   }
 
+  const inProgress = products?.filter((p) => p.stage === "create") ?? [];
+  const ready = products?.filter((p) => p.stage === "ready") ?? [];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Produtos</h1>
-          <p className="text-sm text-stone-500">Cada produto é uma pasta. Coloque fotos reais e referências de estilo e gere as imagens do anúncio.</p>
-        </div>
-        <form onSubmit={create} className="flex gap-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nome do novo produto"
-            className="w-64 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm"
+    <>
+      <section className="relative flex min-h-[92svh] items-end pb-16">
+        <PaintedBackdrop />
+        <Container narrow className="relative animate-fade-up space-y-7 text-center">
+          <Badge dot tone="accent">
+            Feito para quem vende impressão 3D
+          </Badge>
+          <Heading as="h1" size="display">
+            Fotos que vendem,
+            <br />
+            sem estúdio
+          </Heading>
+          <Lead className="mx-auto max-w-xl">
+            Envie fotos do seu produto e a IA cria as imagens do anúncio para Shopee e Mercado Livre — sem mudar nenhum detalhe da peça.
+          </Lead>
+          <form id="novo" onSubmit={create} className="mx-auto flex max-w-md scroll-mt-40 flex-col gap-2 sm:flex-row">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nome do produto, ex.: Topo de bolo Amália"
+              id="novo-nome"
+              aria-label="Nome do novo produto"
+              className="h-12 rounded-full px-5 shadow-float"
+            />
+            <Button type="submit" variant="primary" size="lg" disabled={creating}>
+              {creating ? <Spinner /> : null} Começar <Icon icon={ArrowRight} />
+            </Button>
+          </form>
+          {error && (
+            <Alert tone="danger" onClose={() => setError(null)} className="mx-auto max-w-md text-left">
+              {error}
+            </Alert>
+          )}
+        </Container>
+      </section>
+
+      <Container id="como-funciona" className="scroll-mt-16 py-16">
+        <SectionHeader eyebrow="Como funciona" title="Quatro passos, nenhum conhecimento técnico" className="mb-10" />
+        <FeatureGrid features={HOW_IT_WORKS} />
+      </Container>
+
+      <Container id="produtos" className="scroll-mt-16 space-y-16 py-16">
+        <SectionHeader
+          eyebrow="Seus produtos"
+          title="Em criação"
+          description="Cada produto guarda as fotos, as imagens criadas e os arquivos prontos para o anúncio."
+        />
+        {!products && !error && <Spinner className="size-6 text-ink-faint" />}
+        {products && !inProgress.length && (
+          <EmptyState
+            icon={PackageOpen}
+            title="Nenhum produto ainda"
+            description="Dê um nome ao seu primeiro produto lá em cima e siga os passos."
+            action={
+              <Button variant="primary" onClick={() => document.getElementById("novo-nome")?.focus()}>
+                Criar produto
+              </Button>
+            }
           />
-          <Button variant="primary" disabled={creating || !name.trim()}>
-            {creating ? <Spinner /> : "+"} Novo produto
-          </Button>
-        </form>
-      </div>
-
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {!products && !error && <Spinner className="size-6 text-stone-400" />}
-
-      {products && (
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          {COLUMNS.map((col) => {
-            const items = products.filter((p) => p.stage === col.stage);
-            return (
-              <section key={col.stage} className="space-y-3">
-                <h2 className="flex items-baseline gap-2 font-medium">
-                  {col.title} <span className="text-sm text-stone-400">{items.length}</span>
-                  <code className="ml-auto text-xs text-stone-400">{col.hint}</code>
-                </h2>
-                {!items.length && <p className="text-sm text-stone-400">Nenhum produto.</p>}
-                <div className={`grid gap-3 ${col.stage === "create" ? "sm:grid-cols-2 xl:grid-cols-3" : ""}`}>
-                  {items.map((p) => (
-                    <Link key={p.slug} href={`/products/${p.slug}`}>
-                      <Card className="overflow-hidden transition hover:border-orange-300 hover:shadow-sm">
-                        <div className="aspect-[4/3] bg-stone-100">
-                          {p.cover && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={fileUrl(p.slug, p.cover, 480)} alt="" className="size-full object-cover" />
-                          )}
-                        </div>
-                        <div className="space-y-2 p-3">
-                          <div className="flex items-center gap-2 font-medium">
-                            <span className="truncate">{p.name}</span>
-                            {p.activeJobs > 0 && <Spinner className="size-3.5 text-orange-500" />}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            <Badge>{p.counts.real} fotos</Badge>
-                            <Badge>{p.counts.style} estilos</Badge>
-                            {p.counts.pendingReview > 0 && <Badge tone="orange">{p.counts.pendingReview} p/ revisar</Badge>}
-                            <Badge tone="green">{p.counts.approved} aprovadas</Badge>
-                            {p.counts.export > 0 && <Badge tone="blue">{p.counts.export} exports</Badge>}
-                          </div>
-                        </div>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+        )}
+        <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {inProgress.map((p) => (
+            <ProductCard key={p.slug} product={p} />
+          ))}
         </div>
-      )}
-    </div>
+
+        {ready.length > 0 && (
+          <div className="space-y-8 border-t border-line pt-16">
+            <SectionHeader size="heading" title="Prontos" description="Produtos com os arquivos finalizados." />
+            <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {ready.map((p) => (
+                <ProductCard key={p.slug} product={p} />
+              ))}
+            </div>
+          </div>
+        )}
+      </Container>
+
+      <section className="relative mt-8 overflow-hidden py-32 text-center">
+        <PaintedBackdrop scene="sky" fade={false} />
+        <Container narrow className="relative space-y-5">
+          <Badge dot tone="dark">
+            Em breve
+          </Badge>
+          <Heading size="title" className="text-white">
+            Use pelo seu assistente de IA
+          </Heading>
+          <Lead className="mx-auto max-w-lg text-white/80">
+            Crie produtos, gere e aprove imagens conversando com o ChatGPT ou o Claude, conectados ao Studio via MCP.
+          </Lead>
+        </Container>
+      </section>
+    </>
   );
 }

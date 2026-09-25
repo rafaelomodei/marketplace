@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { findFilament } from "./config";
+import { filamentRefFiles, findFilament, generationSkill } from "./config";
 import { db, now, type JobRow } from "./db";
 import { runCodex } from "./engine/codex";
-import { DATA_DIR, SUBDIRS } from "./paths";
-import { buildPrompt, jobInputIds, type Aspect, type JobParams } from "./prompts";
+import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
+import { buildPrompt, jobInputIds, normalizeParams, type Aspect, type JobParams } from "./prompts";
 import { getImage, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
 
 const CONCURRENCY = Math.max(1, Number(process.env.STUDIO_CONCURRENCY ?? 1));
@@ -32,9 +32,10 @@ export function expandRequest(req: JobRequest): JobParams[] {
 }
 
 function validate(product: string, p: JobParams) {
+  if (p.type === "scene" && !p.sceneImageId) throw new HttpError(400, "Selecione a imagem de cenário");
   const ids = jobInputIds(p);
   if (!ids.length) throw new HttpError(400, "Selecione ao menos uma imagem do produto");
-  if (p.type === "scene" && !p.styleImageIds.length) throw new HttpError(400, "Selecione ao menos uma referência de estilo");
+  if (p.type === "scene" && !p.productImageIds.length) throw new HttpError(400, "Selecione ao menos uma foto do produto");
   for (const id of ids) if (getImage(id).product !== product) throw new HttpError(400, `Imagem ${id} é de outro produto`);
 }
 
@@ -45,10 +46,12 @@ export function createJobs(product: string, req: JobRequest): string[] {
 function enqueue(product: string, jobs: JobParams[]): string[] {
   requireProduct(product);
   const meta = readMeta(product);
+  const skill = generationSkill();
   const ids: string[] = [];
-  for (const params of jobs) {
+  for (const job of jobs) {
+    const params = withFilamentRefs(job);
     validate(product, params);
-    const { prompt, label } = buildPrompt(params, { meta, filament: findFilament });
+    const { prompt, label } = buildPrompt(params, { meta, filament: findFilament, skill });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
     db()
       .prepare(
@@ -59,6 +62,24 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   }
   tick();
   return ids;
+}
+
+/** Attaches the local photos of each chosen filament (in order) so Codex sees the real color and finish. */
+function withFilamentRefs(p: JobParams): JobParams {
+  if (p.type !== "recolor") return p;
+  const ids = [...new Set(p.colors.map((c) => c.filamentId))];
+  const refs = ids.map((filamentId) => {
+    const f = findFilament(filamentId);
+    return { filamentId, files: f ? filamentRefFiles(f) : [] };
+  });
+  return { ...p, refs };
+}
+
+/** Absolute paths of everything attached to Codex, in prompt order. */
+function jobInputPaths(p: JobParams): string[] {
+  const images = jobInputIds(p).map((id) => imagePath(getImage(id)));
+  const refs = p.type === "recolor" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
+  return [...images, ...refs];
 }
 
 export function getJob(id: string): JobRow {
@@ -77,7 +98,7 @@ export function cancelJob(id: string) {
 /** Re-runs a job with the same parameters (a new job, so the old candidate stays for comparison). */
 export function retryJob(id: string): string[] {
   const job = getJob(id);
-  return enqueue(job.product, [JSON.parse(job.params) as JobParams]);
+  return enqueue(job.product, [normalizeParams(JSON.parse(job.params))]);
 }
 
 /** Queues an AI reframe of an approved image to a new aspect. */
@@ -93,8 +114,8 @@ async function execute(job: JobRow, ctrl: AbortController) {
   const d = db();
   d.prepare("UPDATE jobs SET status = 'running', started_at = ?, error = NULL WHERE id = ?").run(now(), job.id);
   try {
-    const params = JSON.parse(job.params) as JobParams;
-    const inputs = jobInputIds(params).map((id) => imagePath(getImage(id)));
+    const params = normalizeParams(JSON.parse(job.params));
+    const inputs = jobInputPaths(params);
     appendLog(job.id, `iniciando codex com ${inputs.length} imagem(ns) de entrada`);
     const workdir = path.join(DATA_DIR, "jobs", job.id);
     const { outputPath } = await runCodex({

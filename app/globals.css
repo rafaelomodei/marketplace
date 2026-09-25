@@ -1,10 +1,98 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens — "Ateliê" design system (inspired by duna.com: warm neutrals, light grotesk
+ * headlines, pill buttons, hairline dividers and painted landscapes). Use the Tailwind classes
+ * these generate (bg-surface, text-ink-muted, rounded-card, text-display…), never raw hex values.
+ * Catalogue: /design-system.
+ */
+@theme {
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fragment Mono", ui-monospace, monospace;
+
+  /* Ink (warm near-black → grey) */
+  --color-ink: #292421;
+  --color-ink-strong: #1a1816;
+  --color-ink-soft: #4d4846;
+  --color-ink-muted: #898683;
+  --color-ink-faint: #b8b4ae;
+
+  /* Surfaces */
+  --color-canvas: #ffffff;
+  --color-surface: #f7f7f5;
+  --color-panel: #edece7;
+  --color-line: #ebe8e2;
+  --color-line-strong: #dfdcd5;
+
+  /* Accent: the lime "live" dot, and a deep lake teal for links/focus */
+  --color-accent: #aeec1d;
+  --color-accent-ink: #3d5a00;
+  --color-lake: #46838c;
+
+  /* Painted pastels — icon tiles, illustrations, soft highlights */
+  --color-peach: #f8d3b8;
+  --color-rose: #f3c3cf;
+  --color-lilac: #d9cdf0;
+  --color-mint: #cde8d5;
+  --color-sun: #f6e3a7;
+  --color-sky: #c8e0ea;
+
+  /* Status */
+  --color-success: #3e7a4c;
+  --color-success-soft: #e3f1e6;
+  --color-danger: #b4453a;
+  --color-danger-soft: #f8e4e1;
+  --color-warning: #9a6b12;
+  --color-warning-soft: #f8edd4;
+
+  /* Type scale: big, light and tight headlines; calm body text */
+  --text-display: 4.5rem;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.06em;
+  --text-title: 2.75rem;
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.05em;
+  --text-heading: 1.75rem;
+  --text-heading--line-height: 1.15;
+  --text-heading--letter-spacing: -0.035em;
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.55;
+  --text-lead--letter-spacing: -0.01em;
+
+  --radius-card: 1rem;
+  --radius-panel: 1.5rem;
+
+  --shadow-float: 0 1px 2px rgb(26 24 22 / 0.04), 0 8px 24px -8px rgb(26 24 22 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(26 24 22 / 0.04), 0 24px 48px -16px rgb(26 24 22 / 0.22);
+
+  --animate-progress: progress 1.6s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.5s ease-out both;
+
+  @keyframes progress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
-  background: #f6f5f3;
-  color: #1c1917;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--color-sun);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-lake);
+  outline-offset: 2px;
 }

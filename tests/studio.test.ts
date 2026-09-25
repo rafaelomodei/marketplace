@@ -12,7 +12,7 @@ fs.cpSync(path.join(__dirname, "..", "config"), path.join(root, "config"), { rec
 
 const products = await import("@/lib/products");
 const { renderTarget, exportImages, defaultMode } = await import("@/lib/export");
-const { buildPrompt, jobInputIds } = await import("@/lib/prompts");
+const { buildPrompt, jobInputIds, normalizeParams } = await import("@/lib/prompts");
 const { expandRequest } = await import("@/lib/jobs");
 const { db } = await import("@/lib/db");
 
@@ -108,26 +108,63 @@ describe("export", () => {
 
 describe("prompts", () => {
   const meta = { name: "Topo Carrossel", description: "", fidelityNotes: "Manter 'Amália'", marketplaces: ["shopee"] };
-  const filament = (id: string) => ({ id, name: "Azul", line: "PLA", hex: "#1F4FB4" });
+  const filament = (id: string) => ({
+    id,
+    name: "Azul",
+    line: "PLA Velvet",
+    lineId: "velvet",
+    hex: "#1F4FB4",
+    finish: "matte velvet",
+    images: [],
+  });
 
-  it("orders inputs products first, then style refs", () => {
-    const p: JobParams = { type: "scene", productImageIds: [1, 2], styleImageIds: [9], aspect: "1:1" };
-    expect(jobInputIds(p)).toEqual([1, 2, 9]);
-    const { prompt, label } = buildPrompt(p, { meta, filament });
+  const skill = "# Regras da skill";
+
+  it("treats the scene as the edit target, attached first", () => {
+    const p: JobParams = { type: "scene", sceneImageId: 9, productImageIds: [1, 2], replaceTarget: "o topo de bolo", aspect: "ref" };
+    expect(jobInputIds(p)).toEqual([9, 1, 2]);
+    const { prompt, label } = buildPrompt(p, { meta, filament, skill });
     expect(label).toBe("cenario");
-    expect(prompt).toContain("images 1–2");
-    expect(prompt).toContain("image 3 is the STYLE");
+    expect(prompt.startsWith("# Regras da skill")).toBe(true);
+    expect(prompt).toContain("Imagem 1: CENÁRIO — alvo da edição");
+    expect(prompt).toContain("Imagens 2–3: PRODUTO");
+    expect(prompt).toContain("OBJETO A SUBSTITUIR: o topo de bolo.");
     expect(prompt).toContain("Manter 'Amália'");
-    expect(prompt).toContain("./output.png");
+    expect(prompt).toContain("Nenhuma além da tarefa acima");
+  });
+
+  it("only allows the changes the seller wrote", () => {
+    const p: JobParams = { type: "white-bg", productImageIds: [1], aspect: "1:1", extra: "sombra mais suave" };
+    const { prompt } = buildPrompt(p, { meta, filament, skill });
+    expect(prompt).toContain("só pode mudar exatamente isto (e nada mais):\nsombra mais suave");
+  });
+
+  it("upgrades old scene params that used styleImageIds", () => {
+    const p = normalizeParams({ type: "scene", productImageIds: [1], styleImageIds: [7, 8], aspect: "1:1" });
+    expect(jobInputIds(p)).toEqual([7, 1]);
   });
 
   it("describes filament colors in recolor prompts", () => {
     const { prompt, label } = buildPrompt(
       { type: "recolor", sourceImageId: 5, colors: [{ part: "partes rosa", filamentId: "azul" }] },
-      { meta, filament },
+      { meta, filament, skill },
     );
     expect(label).toBe("cor-azul");
-    expect(prompt).toContain("partes rosa → Azul (PLA, color #1F4FB4)");
+    expect(prompt).toContain("partes rosa → Azul (PLA Velvet, cor #1F4FB4; acabamento: matte velvet)");
+  });
+
+  it("numbers filament reference photos after the base image", () => {
+    const { prompt } = buildPrompt(
+      {
+        type: "recolor",
+        sourceImageId: 5,
+        colors: [{ part: "", filamentId: "velvet-azul" }],
+        refs: [{ filamentId: "velvet-azul", files: ["a/part.jpg", "a/side.jpg"] }],
+      },
+      { meta, filament, skill },
+    );
+    expect(prompt).toContain("Imagem 1: BASE");
+    expect(prompt).toContain("Imagens 2–3: REFERÊNCIA DE COR — filamento Azul (PLA Velvet)");
   });
 
   it("expands recolor requests into one job per combination", () => {
@@ -145,5 +182,45 @@ describe("prompts", () => {
       ["azul", "preto"],
       ["verde", "preto"],
     ]);
+  });
+});
+
+describe("actions (future MCP tools)", async () => {
+  const { ACTIONS, callAction, listActions } = await import("@/lib/actions");
+  const { nextStep } = await import("@/lib/workflow");
+
+  it("describes every action with a JSON Schema input", () => {
+    const tools = listActions();
+    expect(tools.length).toBe(Object.keys(ACTIONS).length);
+    for (const t of tools) {
+      expect(t.name).toMatch(/^[a-z_]+$/);
+      expect(t.inputSchema).toMatchObject({ type: "object" });
+    }
+  });
+
+  it("validates input before running", async () => {
+    await expect(callAction("get_product", {})).rejects.toMatchObject({ status: 400 });
+    await expect(callAction("nao_existe", {})).rejects.toMatchObject({ status: 404 });
+    await expect(
+      callAction("generate_images", { slug: "x", request: { type: "white-bg", productImageIds: [] } }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("creates a product, adds a base64 photo and suggests the next step", async () => {
+    const { slug } = (await callAction("create_product", { name: "Vaso Onda" })) as { slug: string };
+    expect(await callAction("get_next_step", { slug })).toMatchObject({ step: "photos" });
+    const data = (await png(20, 20)).toString("base64");
+    await callAction("add_images", { slug, kind: "real", files: [{ name: "vaso.png", data }] });
+    expect(await callAction("get_next_step", { slug })).toMatchObject({ step: "create" });
+  });
+
+  it("guides the flow in order", () => {
+    const base = { stage: "create" as const, real: 2, style: 0, generated: 0, pendingReview: 0, approved: 0, exported: 0, activeJobs: 0 };
+    expect(nextStep({ ...base, real: 0 }).step).toBe("photos");
+    expect(nextStep(base).step).toBe("create");
+    expect(nextStep({ ...base, activeJobs: 1 }).tone).toBe("waiting");
+    expect(nextStep({ ...base, generated: 2, pendingReview: 2 }).step).toBe("review");
+    expect(nextStep({ ...base, generated: 2, approved: 1 }).step).toBe("publish");
+    expect(nextStep({ ...base, stage: "ready" }).tone).toBe("done");
   });
 });

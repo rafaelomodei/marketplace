@@ -1,12 +1,8 @@
 import { handle } from "@/lib/api";
-import { createProduct, listProducts } from "@/lib/products";
+import { createProductAction, listProductsAction, runAction } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
-export const GET = () => handle(() => listProducts());
+export const GET = () => handle(() => runAction(listProductsAction, {}));
 
-export const POST = (req: Request) =>
-  handle(async () => {
-    const body = await req.json();
-    return { slug: createProduct(String(body.name ?? "").trim(), body.meta ?? {}) };
-  });
+export const POST = (req: Request) => handle(async () => runAction(createProductAction, await req.json()));

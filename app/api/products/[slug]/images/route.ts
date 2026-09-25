@@ -1,5 +1,5 @@
 import { handle } from "@/lib/api";
-import { HttpError, saveUpload } from "@/lib/products";
+import { addImagesAction, runAction } from "@/lib/actions";
 
 type Ctx = { params: Promise<{ slug: string }> };
 
@@ -7,10 +7,8 @@ export const POST = (req: Request, { params }: Ctx) =>
   handle(async () => {
     const { slug } = await params;
     const form = await req.formData();
-    const kind = form.get("kind");
-    if (kind !== "real" && kind !== "style") throw new HttpError(400, "kind deve ser real ou style");
-    const saved: string[] = [];
+    const files = [];
     for (const file of form.getAll("files"))
-      if (file instanceof File) saved.push(saveUpload(slug, kind, file.name, Buffer.from(await file.arrayBuffer())));
-    return { saved };
+      if (file instanceof File) files.push({ name: file.name, data: new Uint8Array(await file.arrayBuffer()) });
+    return runAction(addImagesAction, { slug, kind: form.get("kind"), files });
   });

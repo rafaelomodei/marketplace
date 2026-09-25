@@ -1,6 +1,6 @@
 import { handle } from "@/lib/api";
-import { filamentCatalog, marketplaces } from "@/lib/config";
+import { getCatalogAction, runAction } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
-export const GET = () => handle(() => ({ filaments: filamentCatalog(), marketplaces: marketplaces() }));
+export const GET = () => handle(() => runAction(getCatalogAction, {}));

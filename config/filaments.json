@@ -1,24 +1,2958 @@
 {
   "brand": "Voolt3D",
-  "note": "Hex aproximados para referência visual/prompt. Ajuste nomes e cores conforme os carretéis que você tem.",
+  "source": "https://voolt3d.com.br/pla/",
+  "syncedAt": "2026-09-24T15:05:21.316Z",
+  "note": "Gerado por scripts/sync-voolt3d.mjs. hex = cor média da foto do carretel; para corrigir, adicione \"hexOverride\" (é preservado na próxima sincronização).",
+  "lines": [
+    {
+      "id": "cores-solidas",
+      "name": "PLA High Speed",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "url": "https://voolt3d.com.br/pla/coressolidas/"
+    },
+    {
+      "id": "evo",
+      "name": "PLA EVO",
+      "finish": "PLA EVO: smooth satin surface, fine visible layer lines, opaque color",
+      "url": "https://voolt3d.com.br/pla/evo/"
+    },
+    {
+      "id": "velvet",
+      "name": "PLA Velvet",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "url": "https://voolt3d.com.br/pla/velvet/"
+    },
+    {
+      "id": "macaron",
+      "name": "PLA Velvet Macaron",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "url": "https://voolt3d.com.br/pla/macaron/"
+    },
+    {
+      "id": "v-silk",
+      "name": "PLA V-Silk",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "url": "https://voolt3d.com.br/pla/v-silk/"
+    },
+    {
+      "id": "neon",
+      "name": "PLA Neon V-Silk",
+      "finish": "fluorescent neon color, very saturated, with the glossy reflective silk finish",
+      "url": "https://voolt3d.com.br/pla/neon/"
+    },
+    {
+      "id": "stone",
+      "name": "PLA Stone",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "url": "https://voolt3d.com.br/pla/stone/"
+    },
+    {
+      "id": "wood",
+      "name": "PLA Wood",
+      "finish": "wood effect with real wood particles: matte, slightly porous texture, organic look of carved natural wood",
+      "url": "https://voolt3d.com.br/pla/wood/"
+    },
+    {
+      "id": "tri-color",
+      "name": "PLA Tri Color V-Silk",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "url": "https://voolt3d.com.br/pla/tri-color/"
+    },
+    {
+      "id": "duo-color-shadow",
+      "name": "PLA Shadow V-Silk",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "url": "https://voolt3d.com.br/pla/duo-color-shadow/"
+    }
+  ],
   "filaments": [
-    { "id": "branco", "name": "Branco", "line": "PLA", "hex": "#F5F5F2" },
-    { "id": "branco-dental", "name": "Branco Dental", "line": "PLA", "hex": "#EFEBDD" },
-    { "id": "preto", "name": "Preto", "line": "PLA", "hex": "#1C1C1C" },
-    { "id": "cinza-claro", "name": "Cinza Claro", "line": "PLA Velvet", "hex": "#BDBDBD" },
-    { "id": "cinza-grafite", "name": "Cinza Grafite", "line": "PLA", "hex": "#4A4D52" },
-    { "id": "vermelho", "name": "Vermelho", "line": "PLA", "hex": "#C8102E" },
-    { "id": "laranja", "name": "Laranja", "line": "PLA", "hex": "#F26B1D" },
-    { "id": "amarelo", "name": "Amarelo", "line": "PLA", "hex": "#F7D117" },
-    { "id": "bege-caucasiano", "name": "Bege Caucasiano", "line": "PLA", "hex": "#E8C9A6" },
-    { "id": "marrom", "name": "Marrom", "line": "PLA", "hex": "#6B4226" },
-    { "id": "rosa", "name": "Rosa", "line": "PLA", "hex": "#F08CAE" },
-    { "id": "rosa-bebe", "name": "Rosa Bebê", "line": "PLA Velvet", "hex": "#F6C1C7" },
-    { "id": "roxo", "name": "Roxo", "line": "PLA", "hex": "#6A3D9A" },
-    { "id": "azul", "name": "Azul", "line": "PLA", "hex": "#1F4FB4" },
-    { "id": "azul-cyan", "name": "Azul Cyan", "line": "PLA", "hex": "#1BA8D9" },
-    { "id": "verde", "name": "Verde", "line": "PLA", "hex": "#2E9B45" },
-    { "id": "verde-oliva", "name": "Verde Oliva", "line": "PLA Velvet", "hex": "#6B7A3A" },
-    { "id": "dourado-silk", "name": "Dourado", "line": "PLA V-Silk", "hex": "#C9A227", "finish": "silk metallic sheen" }
+    {
+      "id": "cores-solidas-branco-dental",
+      "name": "Branco Dental",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#F0F7FC",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-branco-dental-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-branco-dental/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-branco-dental/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-branco-dental/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-branco-dental/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-vermelho",
+      "name": "Vermelho",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#CE040F",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-vermelho-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-laranja",
+      "name": "Laranja",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#FC8035",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-laranja-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-laranja/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-laranja/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-laranja/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-laranja/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-bege-caucasiano",
+      "name": "Bege Caucasiano",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#EDD3C1",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-caucasiano-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-bege-caucasiano/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-bege-caucasiano/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-bege-caucasiano/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-bege-caucasiano/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-amarelo",
+      "name": "Amarelo",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#FDDE04",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-amarelo-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-amarelo/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-amarelo/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-amarelo/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-amarelo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-rosa",
+      "name": "Rosa",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#FC8CD5",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rosa-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-verde",
+      "name": "Verde",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#28E08E",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-azul",
+      "name": "Azul",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#0AACFD",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-roxo",
+      "name": "Roxo",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#E720FA",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-roxo-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-roxo/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-roxo/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-roxo/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-roxo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-marrom",
+      "name": "Marrom",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#62372A",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marrom-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-cinza-grafite",
+      "name": "Cinza Grafite",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#737277",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-grafite-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-grafite/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-grafite/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-grafite/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-grafite/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-azul-cyan",
+      "name": "Azul Cyan",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#62CEF3",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-cyan-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul-cyan/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul-cyan/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul-cyan/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-azul-cyan/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-marrom-cappuccino",
+      "name": "Marrom Cappuccino",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#F2BD96",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marrom-cappuccino-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-cappuccino/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-cappuccino/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-cappuccino/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-cappuccino/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-marrom-caramelo",
+      "name": "Marrom Caramelo",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#F7B451",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-caramelo-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-caramelo/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-caramelo/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-caramelo/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-marrom-caramelo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-rosa-purpura",
+      "name": "Rosa Púrpura",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#FB2AA7",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-purpura-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-purpura/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-purpura/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-purpura/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-purpura/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-verde-tiffany",
+      "name": "Verde Tiffany",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#85EFF2",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-tiffany-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde-tiffany/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde-tiffany/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde-tiffany/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-verde-tiffany/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-preto",
+      "name": "Preto",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#332F31",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-preto-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-preto/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-cinza-claro",
+      "name": "Cinza Claro",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#C2CEDC",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-cinza-claro-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-claro/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-claro/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-claro/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-cinza-claro/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-vermelho-marsala",
+      "name": "Vermelho Marsala",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#D0375E",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marsala-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho-marsala/1.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho-marsala/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho-marsala/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-vermelho-marsala/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cores-solidas-rosa-bebe",
+      "name": "Rosa Bebê",
+      "line": "PLA High Speed",
+      "lineId": "cores-solidas",
+      "hex": "#FDCAD2",
+      "finish": "standard solid PLA: smooth satin surface, sharp details, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rosa-bebe-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-bebe/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-bebe/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-bebe/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/cores-solidas-rosa-bebe/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "evo-preto",
+      "name": "Preto",
+      "line": "PLA EVO",
+      "lineId": "evo",
+      "hex": "#322E30",
+      "finish": "PLA EVO: smooth satin surface, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-preto-evo-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/evo-preto/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/evo-preto/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/evo-preto/3.jpg"
+        }
+      ]
+    },
+    {
+      "id": "evo-branco",
+      "name": "Branco",
+      "line": "PLA EVO",
+      "lineId": "evo",
+      "hex": "#F0F7FC",
+      "finish": "PLA EVO: smooth satin surface, fine visible layer lines, opaque color",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-branco-evo-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/evo-branco/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/evo-branco/2.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/evo-branco/3.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-preto",
+      "name": "Preto",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#393539",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "PRETO-FOSCO",
+        "PRETO-SEM-BRILHO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-preto-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-branco",
+      "name": "Branco",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#E4E8ED",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "BRANCO-FOSCO",
+        "BRANCO-SEM-BRILHO",
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-branco-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-branco/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-branco/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-branco/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-branco/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-bege-caucasiano",
+      "name": "Bege Caucasiano",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#DABEB0",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "CAUCASIANO-FOSCO",
+        "CAUCASIANO-SEM-BRILHO",
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-caucasiano-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-bege-caucasiano/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-bege-caucasiano/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-bege-caucasiano/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-bege-caucasiano/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-vermelho",
+      "name": "Vermelho",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#F90B46",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO",
+        "VERMELHO-FOSCO",
+        "VERMELHO-SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-vermelho-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-vermelho/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-vermelho/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-vermelho/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-vermelho/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-azul",
+      "name": "Azul",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#0679EF",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "filamento-azul-fosco"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-azul/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-azul/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-azul/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-azul/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-rosa-bebe",
+      "name": "Rosa Bebê",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#F7ADB5",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "EFEITO-FOSCO",
+        "ROSA-FOSCO",
+        "rosa-bebe-velvet-fosco-efeito-fosco"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rosa-bebe-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-rosa-bebe/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-rosa-bebe/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-rosa-bebe/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-rosa-bebe/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-cinza-claro",
+      "name": "Cinza Claro",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#A0A8B3",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "CINZA-FOSCO",
+        "CINZA-SEM-BRILHO",
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-cinza-claro-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-cinza-claro/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-cinza-claro/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-cinza-claro/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-cinza-claro/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-verde-oliva",
+      "name": "Verde Oliva",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#90A371",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO",
+        "VERDE-FOSCO",
+        "VERDE-SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-oliva-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-verde-oliva/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-verde-oliva/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-verde-oliva/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-verde-oliva/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-amarelo",
+      "name": "Amarelo",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#FCD009",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "AMARELO-FOSCO",
+        "AMARELO-SEM-BRILHO",
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-amarelo-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-amarelo/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-amarelo/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-amarelo/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-amarelo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-branco-off-white",
+      "name": "Branco Off White",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#F6F4F5",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-branco-off-white-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-branco-off-white/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-branco-off-white/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-branco-off-white/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-branco-off-white/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-marrom",
+      "name": "Marrom",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#654136",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "MARROM-FOSCO",
+        "MARROM-SEM-BRILHO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marrom-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-marrom/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-marrom/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-marrom/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-marrom/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-marrom-cappuccino",
+      "name": "Marrom Cappuccino",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#AF8A73",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "pla-bege-fosco",
+        "pla-marrom-fosco",
+        "pla-marrom-sem-brilho"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marrom-cappuccino-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-marrom-cappuccino/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-marrom-cappuccino/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-marrom-cappuccino/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-marrom-cappuccino/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-verde",
+      "name": "Verde",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#27E4A8",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "SEM-BRILHO",
+        "VERDE-FOSCO",
+        "VERDE-SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-cinza-grafite",
+      "name": "Cinza Grafite",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#54524D",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [
+        "CINZA-FOSCO",
+        "FILAMENTO-FOSCO",
+        "FILAMENTO-SEM-BRILHO",
+        "FOSCO",
+        "GRAFITE-FOSCO",
+        "GRAFITE-SEM-BRILHO",
+        "SEM-BRILHO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-grafite-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/velvet-cinza-grafite/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/velvet-cinza-grafite/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-cinza-grafite/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-cinza-grafite/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "velvet-grafeno",
+      "name": "Grafeno",
+      "line": "PLA Velvet",
+      "lineId": "velvet",
+      "hex": "#3D3D3E",
+      "finish": "matte velvet finish: soft, non-reflective, layer lines barely visible, velvety look",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-grafeno-velvet/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-grafeno/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/velvet-grafeno/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/velvet-grafeno/3.jpg"
+        }
+      ]
+    },
+    {
+      "id": "macaron-lilas",
+      "name": "Lilás",
+      "line": "PLA Velvet Macaron",
+      "lineId": "macaron",
+      "hex": "#DFC9EF",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FOSCO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-lilas-macaron-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/macaron-lilas/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/macaron-lilas/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/macaron-lilas/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/macaron-lilas/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "macaron-azul",
+      "name": "Azul",
+      "line": "PLA Velvet Macaron",
+      "lineId": "macaron",
+      "hex": "#BAE4F4",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FOSCO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-macaron-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/macaron-azul/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/macaron-azul/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/macaron-azul/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/macaron-azul/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "macaron-amarelo",
+      "name": "Amarelo",
+      "line": "PLA Velvet Macaron",
+      "lineId": "macaron",
+      "hex": "#FBE8A5",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FOSCO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-amarelo-macaron-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/macaron-amarelo/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/macaron-amarelo/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/macaron-amarelo/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/macaron-amarelo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "macaron-verde",
+      "name": "Verde",
+      "line": "PLA Velvet Macaron",
+      "lineId": "macaron",
+      "hex": "#CCF0DF",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FOSCO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-macaron-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/macaron-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/macaron-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/macaron-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/macaron-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "macaron-laranja",
+      "name": "Laranja",
+      "line": "PLA Velvet Macaron",
+      "lineId": "macaron",
+      "hex": "#FDB6A1",
+      "finish": "matte velvet finish in a soft pastel (macaron) tone: non-reflective, layer lines barely visible",
+      "tags": [
+        "FILAMENTO-FOSCO",
+        "FOSCO"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-laranja-macaron-velvet-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/macaron-laranja/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/macaron-laranja/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/macaron-laranja/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/macaron-laranja/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-dourado",
+      "name": "Dourado",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#E7C24B",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "PLA-SILK-DOURADO",
+        "silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-dourado-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-dourado/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-dourado/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-dourado/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-dourado/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-dourado/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-branco-perola",
+      "name": "Branco Pérola",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#E6E6E6",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "pla-vsilk",
+        "vsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-perola-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-branco-perola/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-branco-perola/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-branco-perola/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-branco-perola/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-branco-perola/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-verde",
+      "name": "Verde",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#10C168",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-rosa-choque",
+      "name": "Rosa Choque",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#F51469",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "rosa metalizado",
+        "silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rosa-choque-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-choque/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-choque/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-choque/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-choque/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-choque/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-vermelho",
+      "name": "Vermelho",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#E6293A",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "LILAS-VSILK",
+        "PLA-VSILK"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-vermelho-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-vermelho/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-vermelho/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-vermelho/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-vermelho/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-cobre",
+      "name": "Cobre",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#E59A47",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "pla-brilhoso",
+        "pla-metalizado"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-cobre-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-cobre/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-cobre/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-cobre/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-cobre/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-cobre/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-azul-titanium",
+      "name": "Azul Titanium",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#496188",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "brilho",
+        "brilhoso",
+        "pla-vsilk",
+        "plavsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-titanium-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-titanium/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-titanium/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-azul-titanium/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-titanium/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-azul-metalizado",
+      "name": "Azul Metalizado",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#2C87B4",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Azul metalizado",
+        "filamento-rapido. -silk filamento 3D - filamento 3D brilhante azul - filamento 3D metalizado - impressao 3D",
+        "metalic blue",
+        "pla-vsilk",
+        "vsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-metalizado-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-metalizado/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-metalizado/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-azul-metalizado/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-metalizado/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-rose-gold",
+      "name": "Rose Gold",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#977D91",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Rose-Gold-V-Silk-Premium-PLA"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rose-gold-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-rose-gold/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-rose-gold/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-rose-gold/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rose-gold/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rose-gold/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-laranja",
+      "name": "Laranja",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#FE891B",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "brilho",
+        "brilhoso",
+        "silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-laranja-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-laranja/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-laranja/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-laranja/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-laranja/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-amarelo",
+      "name": "Amarelo",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#FEE160",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "brilho",
+        "brilhoso",
+        "silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-amarelo-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-amarelo/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-amarelo/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-amarelo/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-amarelo/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-preto",
+      "name": "Preto",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#2E2C2F",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "filamento-vsilk",
+        "vsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-preto-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-rosa",
+      "name": "Rosa",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#E83EB2",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "PLA-Rosa-V-Silk-Premium"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-rosa-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-rosa/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rosa/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-bronze",
+      "name": "Bronze",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#AE4B48",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "pla-brilhoso",
+        "pla-metalizado"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-bronze-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-bronze/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-bronze/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-bronze/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-bronze/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-bronze/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-lilas",
+      "name": "Lilás",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#8A76DA",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "LILAS-VSILK",
+        "PLA-VSILK"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-lilas-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-lilas/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-lilas/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-lilas/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-lilas/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-lilas/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-rosa-ametista",
+      "name": "Rosa Ametista",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#B64199",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "PLA-V-SILK",
+        "V-SILK",
+        "brilho",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-ametista-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-ametista/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-ametista/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-ametista/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-ametista/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-rosa-ametista/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-champagne",
+      "name": "Champagne",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#D0BBB0",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Brilho",
+        "FILAMENTO-V-SILK",
+        "PLA-V-SILK",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-champagne-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-champagne/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-champagne/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-champagne/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-champagne/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-azul-bebe",
+      "name": "Azul Bebê",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#ACCBE6",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Brilho",
+        "FILAMENTO-V-SILK",
+        "PLA-V-SILK",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azulbebe-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-bebe/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-bebe/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-azul-bebe/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-bebe/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-verde-bebe",
+      "name": "Verde Bebê",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#A1CAB8",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Brilho",
+        "FILAMENTO-V-SILK",
+        "PLA-V-SILK",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-bebe-v-silk-high-speed-premium-1kg-copia/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-verde-bebe/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-verde-bebe/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-verde-bebe/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-verde-bebe/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-inox",
+      "name": "Inox",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#424755",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "filamento-vsilk",
+        "vsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-inox-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-inox/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-inox/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-inox/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-inox/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-aluminio",
+      "name": "Alumínio",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#B5B7C1",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "Brilho",
+        "FILAMENTO-V-SILK",
+        "PLA-V-SILK",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-aluminio-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/v-silk-aluminio/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-aluminio/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-aluminio/3.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-aluminio/4.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-aluminio/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-azul-safira",
+      "name": "Azul Safira",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#2742D6",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "brilho",
+        "brilhoso",
+        "vsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-safira-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-safira/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-safira/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-azul-safira/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-safira/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-safira/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-dourado-ultra",
+      "name": "Dourado Ultra",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#D79A0C",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "PLA-SILK-DOURADO",
+        "silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-dourado-ultra-v-silk-high-speed-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-dourado-ultra/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-dourado-ultra/2.jpg"
+        }
+      ]
+    },
+    {
+      "id": "v-silk-azul-sky",
+      "name": "Azul Sky",
+      "line": "PLA V-Silk",
+      "lineId": "v-silk",
+      "hex": "#47AAF8",
+      "finish": "silk finish: smooth, uniform and highly reflective, intense glossy sheen with soft highlights",
+      "tags": [
+        "plavsilk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-azul-sky-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-sky/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-sky/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/v-silk-azul-sky/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/v-silk-azul-sky/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/v-silk-azul-sky/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "neon-rosa-salmao",
+      "name": "Rosa Salmão",
+      "line": "PLA Neon V-Silk",
+      "lineId": "neon",
+      "hex": "#FDA787",
+      "finish": "fluorescent neon color, very saturated, with the glossy reflective silk finish",
+      "tags": [
+        "PLA-NEON",
+        "vsilk",
+        "vsilk-rosa-salmao"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-salmao-neon-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/neon-rosa-salmao/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/neon-rosa-salmao/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/neon-rosa-salmao/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/neon-rosa-salmao/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "neon-verde",
+      "name": "Verde",
+      "line": "PLA Neon V-Silk",
+      "lineId": "neon",
+      "hex": "#B0EE45",
+      "finish": "fluorescent neon color, very saturated, with the glossy reflective silk finish",
+      "tags": [
+        "NEON",
+        "PLA-Verde-Neon-V-Silk-Premium",
+        "Verde-Neon-Premium-PLA"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-neon-v-silk-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/neon-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/neon-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/neon-verde/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/neon-verde/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/neon-verde/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "stone-crema-marfil",
+      "name": "Crema Marfil",
+      "line": "PLA Stone",
+      "lineId": "stone",
+      "hex": "#B09B89",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "tags": [
+        "filamento-efeito-pedra",
+        "pedra"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-crema-marfil-stone-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-crema-marfil/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/stone-crema-marfil/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-crema-marfil/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-crema-marfil/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "stone-verde-ardosia",
+      "name": "Verde Ardósia",
+      "line": "PLA Stone",
+      "lineId": "stone",
+      "hex": "#7E8C64",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "tags": [
+        "filamento-efeito-pedra",
+        "pedra"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-verde-ardosia-stone-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/stone-verde-ardosia/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/stone-verde-ardosia/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-verde-ardosia/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-verde-ardosia/4.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/stone-verde-ardosia/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "stone-grafite",
+      "name": "Grafite",
+      "line": "PLA Stone",
+      "lineId": "stone",
+      "hex": "#48474C",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "tags": [
+        "filamento-efeito-pedra",
+        "pedra"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-grafite-stone-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-grafite/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-grafite/2.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-grafite/3.jpg"
+        }
+      ]
+    },
+    {
+      "id": "stone-marmorizado",
+      "name": "Marmorizado",
+      "line": "PLA Stone",
+      "lineId": "stone",
+      "hex": "#B2B0AC",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "tags": [
+        "filamento-efeito-pedra",
+        "pedra"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-marmorizado-stone-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-marmorizado/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/stone-marmorizado/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-marmorizado/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-marmorizado/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "stone-gesso",
+      "name": "Gesso",
+      "line": "PLA Stone",
+      "lineId": "stone",
+      "hex": "#C1BEBC",
+      "finish": "stone effect: matte, slightly rough mineral texture with discreet dark granules, earthy natural-stone look",
+      "tags": [
+        "pedra"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-gesso-stone-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-gesso/1.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-gesso/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/stone-gesso/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/stone-gesso/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "wood-pinus",
+      "name": "Pinus",
+      "line": "PLA Wood",
+      "lineId": "wood",
+      "hex": "#DEBBA3",
+      "finish": "wood effect with real wood particles: matte, slightly porous texture, organic look of carved natural wood",
+      "tags": [
+        "MADEIRA",
+        "PLA-COM-MADEIRA",
+        "PLA-MADEIRA"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-pinus-wood-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/wood-pinus/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/wood-pinus/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/wood-pinus/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/wood-pinus/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "wood-tabaco",
+      "name": "Tabaco",
+      "line": "PLA Wood",
+      "lineId": "wood",
+      "hex": "#82563E",
+      "finish": "wood effect with real wood particles: matte, slightly porous texture, organic look of carved natural wood",
+      "tags": [
+        "MADEIRA",
+        "PLA-COM-MADEIRA"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tabaco-wood-premium/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/wood-tabaco/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/wood-tabaco/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/wood-tabaco/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/wood-tabaco/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "wood-carvao",
+      "name": "Carvão",
+      "line": "PLA Wood",
+      "lineId": "wood",
+      "hex": "#2E2C32",
+      "finish": "wood effect with real wood particles: matte, slightly porous texture, organic look of carved natural wood",
+      "tags": [
+        "MADEIRA",
+        "PLA-COM-MADEIRA"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-carvao-wood-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/wood-carvao/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/wood-carvao/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/wood-carvao/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/wood-carvao/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/wood-carvao/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-bronze-prata-ouro",
+      "name": "Bronze / Prata / Ouro",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#F9BB24",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-color-bronze-prata-ouro-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/tri-color-bronze-prata-ouro/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-bronze-prata-ouro/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-bronze-prata-ouro/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-bronze-prata-ouro/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-ametista-azul-safira-dourado",
+      "name": "Ametista / Azul Safira / Dourado",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#EBB415",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-color-ametista-azul-safira-dourado-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-ametista-azul-safira-dourado/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-ametista-azul-safira-dourado/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-ametista-azul-safira-dourado/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-ametista-azul-safira-dourado/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-ametista-azul-safira-dourado/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-dourado-rosa-choque-verde",
+      "name": "Dourado / Rosa Choque / Verde",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#F4974A",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-color-dourado-rosa-choque-verde-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-rosa-choque-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-rosa-choque-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-rosa-choque-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-rosa-choque-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-dourado-laranja-rosa-choque",
+      "name": "Dourado / Laranja / Rosa Choque",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#E30E71",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-color-dourado-laranja-rosa-choque-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-laranja-rosa-choque/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-laranja-rosa-choque/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-laranja-rosa-choque/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-dourado-laranja-rosa-choque/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-azul-safira-dourado-verde",
+      "name": "Azul Safira / Dourado / Verde",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#0A688A",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-azul-safira-dourado-verde-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/tri-color-azul-safira-dourado-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-azul-safira-dourado-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-azul-safira-dourado-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-azul-safira-dourado-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "tri-color-azul-laranja-verde-neon",
+      "name": "Azul / Laranja / Verde Neon",
+      "line": "PLA Tri Color V-Silk",
+      "lineId": "tri-color",
+      "hex": "#A1E32E",
+      "finish": "tri-color silk: three colors in one strand, the color changes across the part and with the viewing angle, intense silk gloss",
+      "tags": [
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-tri-color-azul-laranja-verde-neon-v-silk-high-speed-premium-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/tri-color-azul-laranja-verde-neon/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-azul-laranja-verde-neon/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/tri-color-azul-laranja-verde-neon/3.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/tri-color-azul-laranja-verde-neon/4.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/tri-color-azul-laranja-verde-neon/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-vermelho-com-preto",
+      "name": "Vermelho com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#5D3039",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "preto v-silk",
+        "vermelho v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-vermelho-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-vermelho-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-vermelho-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-vermelho-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-vermelho-com-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-laranja-com-preto",
+      "name": "Laranja com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#F37109",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "laranja v-silk",
+        "preto v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-laranja-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-laranja-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-laranja-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-laranja-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-laranja-com-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-verde-com-ametista",
+      "name": "Verde com Ametista",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#6C2472",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "ametista v-silk",
+        "brilhoso",
+        "verde-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-verde-com-ametista-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-ametista/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-ametista/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-ametista/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-ametista/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-rosa-com-preto",
+      "name": "Rosa com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#E5087E",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "preto v-silk",
+        "rosa v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-rosa-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-rosa-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-rosa-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-rosa-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-rosa-com-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-dourado-com-preto",
+      "name": "Dourado com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#C69D0F",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "dourado v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-dourado-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-azul-com-preto",
+      "name": "Azul com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#3376AB",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "azul sky v-silk",
+        "brilhoso",
+        "preto v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-azul-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-com-preto/4.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-com-preto/5.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-azul-safira-com-ametista",
+      "name": "Azul Safira com Ametista",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#253DD6",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "ametista v-silk",
+        "azul safira v-silk",
+        "brilhoso"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-azul-safira-com-ametista-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-safira-com-ametista/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-safira-com-ametista/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-safira-com-ametista/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-azul-safira-com-ametista/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-verde-com-preto",
+      "name": "Verde com Preto",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#067154",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "preto v-silk",
+        "verde-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-verde-com-preto-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-preto/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-preto/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-preto/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-verde-com-preto/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-dourado-com-verde",
+      "name": "Dourado com Verde",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#15A57C",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "brilhoso",
+        "dourado v-silk",
+        "verde-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-dourado-com-verde-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-verde/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-verde/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-verde/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-verde/4.jpg"
+        }
+      ]
+    },
+    {
+      "id": "duo-color-shadow-dourado-com-ametista",
+      "name": "Dourado com Ametista",
+      "line": "PLA Shadow V-Silk",
+      "lineId": "duo-color-shadow",
+      "hex": "#AB6A23",
+      "finish": "shadow silk 70/30: the main color is shaded by the darker second color with smooth transitions across the part, intense silk gloss",
+      "tags": [
+        "ametista v-silk",
+        "brilhoso",
+        "dourado v-silk"
+      ],
+      "url": "https://voolt3d.com.br/produtos/filamento-pla-duo-color-shadow-dourado-com-ametista-v-silk-1kg/",
+      "images": [
+        {
+          "role": "spool-part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-ametista/1.jpg"
+        },
+        {
+          "role": "part",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-ametista/2.jpg"
+        },
+        {
+          "role": "spool-side",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-ametista/3.jpg"
+        },
+        {
+          "role": "spool",
+          "file": "assets/filaments/voolt3d/duo-color-shadow-dourado-com-ametista/4.jpg"
+        }
+      ]
+    }
   ]
 }

@@ -32,14 +32,15 @@ await page.getByText("Em criação").first().waitFor();
 await pause(2200);
 
 await click(page.locator(`a[href="/products/${SLUG}"]`));
-await page.getByText("Fotos reais do produto").waitFor();
+await page.getByRole("button", { name: /Fotos/ }).first().waitFor();
+await click(page.getByRole("button", { name: /Fotos/ }).first());
 await pause(2500);
 
-await click(page.getByRole("button", { name: /2\. Gerar/ }));
+await click(page.getByRole("button", { name: /Criar$/ }));
 await pause(1500);
-await click(page.getByText("Cenário de referência"));
+await click(page.getByText("No cenário"));
 await pause(1500);
-await click(page.getByText("Variação de cor"));
+await click(page.getByText("Outras cores").first());
 await pause(1000);
 for (const name of ["Azul Cyan", "Verde", "Roxo"]) {
   await click(page.getByRole("button", { name, exact: true }).first());
@@ -47,14 +48,14 @@ for (const name of ["Azul Cyan", "Verde", "Roxo"]) {
 }
 await pause(1500);
 
-await click(page.getByRole("button", { name: /3\. Candidatas/ }));
+await click(page.getByRole("button", { name: /Escolher/ }));
 await pause(1200);
 await click(page.getByRole("button", { name: "Todas" }));
 await pause(2200);
-await page.getByText("prompt usado").first().click();
+await page.getByText("Detalhes").first().click();
 await pause(2200);
 
-await click(page.getByRole("button", { name: /4\. Aprovadas/ }));
+await click(page.getByRole("button", { name: /Publicar/ }));
 await pause(3000);
 
 const video = page.video();
