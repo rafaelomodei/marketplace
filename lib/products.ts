@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { db, now, type ImageRow, type JobRow } from "./db";
+import { slugify } from "./text";
 import { IMAGE_EXT, PRODUCTS_DIR, STAGES, SUBDIRS, type ImageKind, type Stage } from "./paths";
 
 export type ProductMeta = {
@@ -19,15 +20,7 @@ export type ProductSummary = {
   activeJobs: number;
 };
 
-export function slugify(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
+export { slugify };
 
 export function safeFileName(name: string): string {
   const ext = path.extname(name);

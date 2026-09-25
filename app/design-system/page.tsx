@@ -24,6 +24,7 @@ import {
   OptionCard,
   PaintedBackdrop,
   Progress,
+  RangeField,
   SectionHeader,
   Spinner,
   Stepper,
@@ -43,6 +44,7 @@ export default function DesignSystem() {
   const [single, setSingle] = useState("shopee");
   const [multi, setMulti] = useState(["1x1", "3x4"]);
   const [step, setStep] = useState("create");
+  const [size, setSize] = useState(14);
 
   return (
     <>
@@ -157,7 +159,7 @@ export default function DesignSystem() {
             <Field label="O que a IA nunca pode mudar" optional>
               <Textarea placeholder="Ex.: o nome 'Amália'" />
             </Field>
-            <Field label="Escolha única">
+            <Field as="div" label="Escolha única">
               <ChoiceGroup
                 value={single}
                 onChange={setSingle}
@@ -167,7 +169,8 @@ export default function DesignSystem() {
                 ]}
               />
             </Field>
-            <Field label="Várias escolhas">
+            <RangeField label="Faixa (RangeField)" value={size} min={6} max={40} step={0.5} unit="mm" onChange={setSize} />
+            <Field as="div" label="Várias escolhas">
               <ChoiceGroup
                 multiple
                 value={multi}

@@ -107,13 +107,29 @@ A fila roda uma imagem por vez. Use `STUDIO_CONCURRENCY=2` para paralelizar. Out
 - Design system **Ateliê** (inspirado em [duna.com](https://duna.com)): neutros quentes, títulos leves, botões em pílula e paisagens pintadas em SVG. Componentes em `components/ui` (atomic design: atoms → molecules → organisms → templates), tokens em `app/globals.css` e catálogo vivo em [`/design-system`](http://localhost:3456/design-system).
 - Regras para contribuir (reuso de componentes, tokens, ações) em [`CLAUDE.md`](CLAUDE.md).
 
+## Lab
+
+Área de ferramentas paramétricas em `/lab` (seletor **Studio | Lab** no topo), inspirada no MakerLab do MakerWorld.
+
+- **Chaveiro com nome**: nome em relevo sobre uma base de contorno suave, com argola no começo, no fim ou em cima.
+  - **Texto de cima** opcional (ex.: a profissão) com fonte, tamanho e alinhamento próprios, e **ícone** opcional (30 ícones: coração, estrela, maçã, dente, estetoscópio, tesoura…).
+  - Cada parte tem sua cor, escolhida entre os filamentos Voolt3D: até **4 cores** (base, nome, texto de cima, ícone).
+  - Modelos prontos para começar: *Só o nome*, *Profissão e nome* e *Nome e ícone*.
+  - Prévia 3D ao vivo; baixe o **3MF multicor** (cada parte separada, pronto para AMS) ou os STLs.
+  - **Impressora de uma cor**: escolha quais peças imprimir separadas (nome, texto de cima, ícone). A base sai com **encaixes rebaixados** no formato de cada peça (folga ajustável, padrão 0,2 mm; profundidade padrão 1 mm) e as peças ganham a altura do encaixe, ficando com o mesmo relevo depois de encaixadas. O que não for separado vem grudado na base. "Ver encaixes" levanta as peças na prévia; tudo sai num `.zip`.
+  - 13 fontes e os ícones (Font Awesome Free) têm licenças livres para uso comercial.
+- **Etiqueta de bolsa com alça**: o mesmo nome (com texto de cima e ícone opcionais) numa etiqueta com **alça flexível e fecho de pressão impressos junto** — passe a alça em volta da alça da mochila e pressione o furo no pino, sem argola de metal. Alça à esquerda ou à direita, comprimento ajustável; nos ajustes finos, largura/espessura da alça, grossura do pino, firmeza do fecho e folga do furo. Por padrão as letras saem como peças de encaixe (não precisa de AMS).
+- Os modelos são OpenSCAD próprios (`lib/lab/tools/<ferramenta>/*.scad`) rodando em **WebAssembly** no navegador: nada para instalar e nenhum processamento no servidor.
+- Nova ferramenta = um `.scad` + a lista de parâmetros; o formulário, a prévia e os downloads são gerados sozinhos.
+- `pnpm lab:fonts` baixa as fontes para `public/lab/fonts/` (já vêm no repositório).
+
 ## Preparado para MCP
 
 Cada operação é uma ação tipada em `lib/actions/` (nome, descrição, schema zod). As rotas da API usam essas ações, e `GET /api/actions` lista todas com JSON Schema — a base para um servidor MCP futuro. Ver [`docs/mcp.md`](docs/mcp.md).
 
 ## Stack
 
-Next.js 15 (App Router) + TypeScript · Tailwind CSS 4 · lucide-react · zod · SQLite (better-sqlite3) · sharp · Codex CLI · Vitest
+Next.js 15 (App Router) + TypeScript · Tailwind CSS 4 · lucide-react · zod · OpenSCAD (WASM) · three.js · SQLite (better-sqlite3) · sharp · Codex CLI · Vitest
 
 ## Desenvolvimento
 

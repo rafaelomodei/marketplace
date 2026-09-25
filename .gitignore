@@ -5,3 +5,5 @@ next-env.d.ts
 data/
 /products/
 /assets/
+/tmp/
+/.vitest/

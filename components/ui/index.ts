@@ -10,6 +10,7 @@ export { Icon, IconTile, type TileTone } from "./atoms/Icon";
 export { Input, Textarea } from "./atoms/Input";
 export { Logo } from "./atoms/Logo";
 export { Progress } from "./atoms/Progress";
+export { Slider } from "./atoms/Slider";
 export { Spinner } from "./atoms/Spinner";
 export { Swatch } from "./atoms/Swatch";
 export { Code, Heading, Lead, Muted } from "./atoms/Text";
@@ -24,12 +25,13 @@ export { Field } from "./molecules/Field";
 export { FormSection } from "./molecules/FormSection";
 export { ImageTile } from "./molecules/ImageTile";
 export { OptionCard } from "./molecules/OptionCard";
+export { RangeField } from "./molecules/RangeField";
 export { Stepper, type Step } from "./molecules/Stepper";
 
 export { ErrorBanner } from "./organisms/ErrorBanner";
 export { Lightbox } from "./organisms/Lightbox";
 export { PaintedBackdrop } from "./organisms/PaintedBackdrop";
-export { SiteHeader } from "./organisms/SiteHeader";
+export { SiteHeader, type HeaderTab } from "./organisms/SiteHeader";
 
 export { Container } from "./templates/Container";
 export { SectionHeader } from "./templates/SectionHeader";

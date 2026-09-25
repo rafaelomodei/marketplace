@@ -202,7 +202,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
           <Disclosure summary="Opções avançadas" className="border-t border-line pt-4">
             <div className="space-y-5">
               {mode !== "recolor" && (
-                <Field label="Formato" hint="Depois de aprovar, você ainda ajusta para o tamanho de cada marketplace.">
+                <Field as="div" label="Formato" hint="Depois de aprovar, você ainda ajusta para o tamanho de cada marketplace.">
                   <ChoiceGroup value={aspect} onChange={setAspect} options={aspectOptions.map((a) => ({ value: a, label: ASPECT_LABEL[a] }))} />
                 </Field>
               )}

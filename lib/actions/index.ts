@@ -1,10 +1,12 @@
 import { HttpError } from "../products";
 import { describeAction, runAction, type Action } from "./define";
 import * as g from "./generation";
+import * as lab from "./lab";
 import * as p from "./products";
 
 export { defineAction, describeAction, runAction, type Action } from "./define";
 export * from "./generation";
+export * from "./lab";
 export * from "./products";
 
 /**
@@ -28,6 +30,8 @@ const ALL = [
   g.reviewImageAction,
   g.reframeImageAction,
   g.exportImagesAction,
+  lab.listLabToolsAction,
+  lab.renderLabModelAction,
 ] as unknown as Action[];
 
 export const ACTIONS: Record<string, Action> = Object.fromEntries(ALL.map((a) => [a.name, a]));

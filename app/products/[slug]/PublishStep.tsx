@@ -115,7 +115,7 @@ export function PublishStep({ product, config, reload, preview, goTo }: StepProp
 
       <aside className="lg:sticky lg:top-20 lg:h-fit">
         <Card className="space-y-6 p-5">
-          <Field label="Onde você vai anunciar?">
+          <Field as="div" label="Onde você vai anunciar?">
             <ChoiceGroup
               value={marketplace}
               onChange={(id) => {
@@ -125,11 +125,11 @@ export function PublishStep({ product, config, reload, preview, goTo }: StepProp
               options={mpIds.map((id) => ({ value: id, label: config.marketplaces[id].name }))}
             />
           </Field>
-          <Field label="Tamanhos" hint="Já vêm marcados os tamanhos que o marketplace pede.">
+          <Field as="div" label="Tamanhos" hint="Já vêm marcados os tamanhos que o marketplace pede.">
             <ChoiceGroup multiple value={targetIds} onChange={setTargetIds} options={targets.map((t) => ({ value: t.id, label: t.label }))} />
           </Field>
           <Disclosure summary="Como ajustar ao tamanho">
-            <Field label="Ajuste" hint={FITS.find((f) => f.value === fit)?.hint}>
+            <Field as="div" label="Ajuste" hint={FITS.find((f) => f.value === fit)?.hint}>
               <ChoiceGroup value={fit} onChange={setFit} options={FITS} />
             </Field>
           </Disclosure>

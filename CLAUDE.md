@@ -13,6 +13,16 @@
 - Cores, fontes, raios e sombras são tokens em `app/globals.css` (`@theme`). Use as classes (`bg-surface`, `text-ink-muted`, `rounded-card`, `text-display`), nunca hex solto.
 - Essência (inspirada em duna.com): neutros quentes, títulos grandes em peso 400 com tracking negativo, botões em pílula (um único primário escuro por tela), linhas finas, muito respiro, paisagens pintadas (`PaintedBackdrop`), ícones lucide finos (`Icon`, `IconTile`).
 
+## Lab (ferramentas paramétricas)
+- Área separada em `/lab` (o logo vira "Lab"; o seletor Studio | Lab fica no `AppHeader`).
+- Cada ferramenta = pasta em `lib/lab/tools/<id>/` com o modelo `.scad` (código próprio — não copie modelos de terceiros)
+  e a definição (`LabTool`: parâmetros, peças/cores, validação). Registre em `lib/lab/tools/index.ts`.
+- Ferramentas de "nome sobre base de contorno" reaproveitam `lib/lab/scad/name-tag.scad` (linhas, ícone, contorno, encaixes)
+  e `lib/lab/tools/shared/name-tag.ts` (parâmetros, peças, arquivos); a ferramenta só acrescenta a sua parte (argola, alça…).
+- O formulário, o 3D e os downloads vêm prontos do `ToolWorkbench`; parâmetros novos só precisam de um tipo em `lib/lab/params.ts`.
+- OpenSCAD roda em WebAssembly (`lib/lab/engine.ts`): no navegador via Web Worker e no Node para as ações (`list_lab_tools`, `render_lab_model`).
+- Fontes em `public/lab/fonts/` (`pnpm lab:fonts`), só licenças livres para uso comercial (OFL/Apache).
+
 ## Simplicidade para quem não é técnico
 - Linguagem simples na tela; termos técnicos (prompt, log do Codex, pastas) ficam em `Disclosure` ("Detalhes", "Opções avançadas").
 - Uma ação recomendada por vez: `lib/workflow.ts` (`nextStep`) decide; a UI (`NextStepCard`) e os agentes (`get_next_step`) usam a mesma função.
