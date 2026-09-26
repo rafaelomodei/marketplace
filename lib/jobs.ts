@@ -6,7 +6,7 @@ import { db, now, type JobRow } from "./db";
 import { runCodex } from "./engine/codex";
 import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
 import { buildPrompt, jobInputIds, normalizeParams, type Aspect, type JobParams } from "./prompts";
-import { getImage, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
+import { getImage, HttpError, imagePath, readMeta, registerImage, requireProduct, type ProductMeta } from "./products";
 
 const CONCURRENCY = Math.max(1, Number(process.env.STUDIO_CONCURRENCY ?? 1));
 const MAX_BATCH = 12;
@@ -15,12 +15,26 @@ type QueueState = { started: boolean; running: Map<string, AbortController> };
 const g = globalThis as unknown as { __studioQueue?: QueueState };
 const state: QueueState = (g.__studioQueue ??= { started: false, running: new Map() });
 
-/** Request shape for recolor: each part may list several filaments; one job per combination. */
+/**
+ * What callers ask for. Recolor: each part may list several filaments, one job per combination. Photo from the 3D:
+ * several 3D pictures, one job per picture (the others go along to show the shape).
+ */
 export type JobRequest =
-  | Exclude<JobParams, { type: "recolor" }>
-  | { type: "recolor"; sourceImageId: number; colors: { part: string; filamentIds: string[] }[]; extra?: string };
+  | Exclude<JobParams, { type: "recolor" } | { type: "from-3d" }>
+  | { type: "recolor"; sourceImageId: number; colors: { part: string; filamentIds: string[] }[]; extra?: string }
+  | { type: "from-3d"; renderImageIds: number[]; extra?: string };
 
 export function expandRequest(req: JobRequest): JobParams[] {
+  if (req.type === "from-3d") {
+    if (!req.renderImageIds.length) throw new HttpError(400, "Escolha ao menos uma imagem do modelo 3D");
+    if (req.renderImageIds.length > MAX_BATCH) throw new HttpError(400, `Isso geraria ${req.renderImageIds.length} imagens (máximo ${MAX_BATCH})`);
+    return req.renderImageIds.map((renderImageId) => ({
+      type: "from-3d",
+      renderImageId,
+      otherRenderIds: req.renderImageIds.filter((id) => id !== renderImageId),
+      extra: req.extra,
+    }));
+  }
   if (req.type !== "recolor") return [req];
   const rows = req.colors.filter((c) => c.filamentIds.length > 0);
   if (!rows.length) throw new HttpError(400, "Escolha ao menos um filamento");
@@ -33,6 +47,8 @@ export function expandRequest(req: JobRequest): JobParams[] {
 
 function validate(product: string, p: JobParams) {
   if (p.type === "scene" && !p.sceneImageId) throw new HttpError(400, "Selecione a imagem de cenário");
+  if (p.type === "staged" && !p.setting.trim()) throw new HttpError(400, "Descreva a cena");
+  if (p.type === "from-3d" && getImage(p.renderImageId).kind !== "render") throw new HttpError(400, "Escolha uma imagem do modelo 3D");
   const ids = jobInputIds(p);
   if (!ids.length) throw new HttpError(400, "Selecione ao menos uma imagem do produto");
   if (p.type === "scene" && !p.productImageIds.length) throw new HttpError(400, "Selecione ao menos uma foto do produto");
@@ -49,7 +65,7 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   const skill = generationSkill();
   const ids: string[] = [];
   for (const job of jobs) {
-    const params = withFilamentRefs(job);
+    const params = withFilamentRefs(job, meta);
     validate(product, params);
     const { prompt, label } = buildPrompt(params, { meta, filament: findFilament, skill });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
@@ -64,21 +80,26 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   return ids;
 }
 
-/** Attaches the local photos of each chosen filament (in order) so Codex sees the real color and finish. */
-function withFilamentRefs(p: JobParams): JobParams {
-  if (p.type !== "recolor") return p;
-  const ids = [...new Set(p.colors.map((c) => c.filamentId))];
-  const refs = ids.map((filamentId) => {
-    const f = findFilament(filamentId);
-    return { filamentId, files: f ? filamentRefFiles(f) : [] };
-  });
-  return { ...p, refs };
+/**
+ * Attaches the local photos of each filament (in order) so Codex sees the real color and finish: the ones chosen for a
+ * color variation, or the ones the piece was designed with in the Lab (photo from the 3D model).
+ */
+function withFilamentRefs(p: JobParams, meta: ProductMeta): JobParams {
+  const refsOf = (ids: string[], perFilament?: number) =>
+    [...new Set(ids)].map((filamentId) => {
+      const f = findFilament(filamentId);
+      return { filamentId, files: (f ? filamentRefFiles(f) : []).slice(0, perFilament) };
+    });
+  if (p.type === "recolor") return { ...p, refs: refsOf(p.colors.map((c) => c.filamentId)) };
+  // From the 3D, one photo per filament is enough (the model already shows where each color goes).
+  if (p.type === "from-3d") return { ...p, refs: refsOf(meta.lab?.parts.flatMap((x) => (x.filamentId ? [x.filamentId] : [])) ?? [], 1) };
+  return p;
 }
 
 /** Absolute paths of everything attached to Codex, in prompt order. */
 function jobInputPaths(p: JobParams): string[] {
   const images = jobInputIds(p).map((id) => imagePath(getImage(id)));
-  const refs = p.type === "recolor" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
+  const refs = p.type === "recolor" || p.type === "from-3d" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
   return [...images, ...refs];
 }
 
@@ -131,7 +152,7 @@ async function execute(job: JobRow, ctrl: AbortController) {
     const rel = path.posix.join(SUBDIRS.generated, `${job.id}${path.extname(outputPath) || ".png"}`);
     fs.mkdirSync(path.join(dir, SUBDIRS.generated), { recursive: true });
     fs.copyFileSync(outputPath, path.join(dir, rel));
-    const parentId = "sourceImageId" in params ? params.sourceImageId : null;
+    const parentId = "sourceImageId" in params ? params.sourceImageId : "renderImageId" in params ? params.renderImageId : null;
     const imageId = registerImage(job.product, rel, "generated", { label: job.label, jobId: job.id, parentId });
     d.prepare("UPDATE jobs SET status = 'done', output_image_id = ?, finished_at = ? WHERE id = ?").run(imageId, now(), job.id);
     appendLog(job.id, `imagem salva em ${rel}`);

@@ -4,11 +4,26 @@ import { db, now, type ImageRow, type JobRow } from "./db";
 import { slugify } from "./text";
 import { IMAGE_EXT, PRODUCTS_DIR, STAGES, SUBDIRS, type ImageKind, type Stage } from "./paths";
 
+/** A product made in the Lab: where it came from and what the 3D pictures cannot tell (real colors, size). */
+export type LabSource = {
+  tool: string;
+  toolName: string;
+  creation: string;
+  /** Each printed part and its color (the real filament, when one was picked). */
+  parts: { label: string; hex: string; filamentId: string | null }[];
+  sizeMm?: [number, number, number];
+  /** What the tool knows about photographing it (e.g. "the clip is a plain metal paper clip"). */
+  notes?: string;
+  /** Ideas of where to show it in use (e.g. "no zíper de uma mochila"). */
+  scenes?: string[];
+};
+
 export type ProductMeta = {
   name: string;
   description: string;
   fidelityNotes: string;
   marketplaces: string[];
+  lab?: LabSource;
 };
 
 export type ProductSummary = {
@@ -85,9 +100,11 @@ export function writeMeta(slug: string, patch: Partial<ProductMeta>): ProductMet
   return meta;
 }
 
-export function createProduct(name: string, meta: Partial<ProductMeta> = {}): string {
-  const slug = slugify(name);
+/** `unique`: when the name is taken, use "name-2", "name-3"… instead of failing (products made from the Lab). */
+export function createProduct(name: string, meta: Partial<ProductMeta> = {}, opts: { unique?: boolean } = {}): string {
+  let slug = slugify(name);
   if (!slug) throw new HttpError(400, "Nome inválido");
+  if (opts.unique) for (let i = 2; locateProduct(slug); i++) slug = `${slugify(name).slice(0, 56)}-${i}`;
   if (locateProduct(slug)) throw new HttpError(409, `Já existe um produto "${slug}"`);
   const dir = path.join(stageDir("create"), slug);
   for (const sub of [SUBDIRS.real, SUBDIRS.style]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
@@ -167,13 +184,16 @@ export function listProducts(): ProductSummary[] {
   }[];
   return products.map((p) => {
     const images = d.prepare("SELECT kind, status, rel FROM images WHERE product = ?").all(p.slug) as ImageRow[];
-    const counts = { real: 0, style: 0, generated: 0, approved: 0, export: 0, pendingReview: 0 };
+    const counts = { real: 0, render: 0, style: 0, generated: 0, approved: 0, export: 0, pendingReview: 0 };
     for (const img of images) {
       counts[img.kind as ImageKind]++;
       if (img.kind === "generated" && img.status === "pending") counts.pendingReview++;
     }
     const cover =
-      images.find((i) => i.kind === "approved")?.rel ?? images.find((i) => i.kind === "real")?.rel ?? null;
+      images.find((i) => i.kind === "approved")?.rel ??
+      images.find((i) => i.kind === "real")?.rel ??
+      images.find((i) => i.kind === "render")?.rel ??
+      null;
     const activeJobs = (
       d.prepare("SELECT COUNT(*) n FROM jobs WHERE product = ? AND status IN ('queued','running')").get(p.slug) as {
         n: number;
@@ -215,7 +235,7 @@ function uniqueRel(dir: string, sub: string, fileName: string): string {
   return path.posix.join(sub, candidate);
 }
 
-export function saveUpload(slug: string, kind: "real" | "style", fileName: string, data: Buffer): string {
+export function saveUpload(slug: string, kind: "real" | "style" | "render", fileName: string, data: Buffer): string {
   if (!IMAGE_EXT.test(fileName)) throw new HttpError(400, `Formato não suportado: ${fileName}`);
   const { dir } = requireProduct(slug);
   const sub = SUBDIRS[kind];
@@ -261,16 +281,25 @@ export function approveImage(id: number): number {
   fs.mkdirSync(path.join(dir, SUBDIRS.approved), { recursive: true });
   fs.copyFileSync(imagePath(img), path.join(dir, rel));
   db().prepare("UPDATE images SET status = 'approved' WHERE id = ?").run(id);
-  return registerImage(img.product, rel, "approved", { label: img.label, jobId: img.job_id, parentId: img.id });
+  const approvedId = registerImage(img.product, rel, "approved", { label: img.label, jobId: img.job_id, parentId: img.id });
+  // A real-looking photo made from the 3D model is, once approved, a photo of the product for the other modes.
+  const job = img.job_id ? (db().prepare("SELECT type FROM jobs WHERE id = ?").get(img.job_id) as { type: string } | undefined) : undefined;
+  if (job?.type === "from-3d") {
+    const photo = path.posix.join(SUBDIRS.real, `foto-do-3d-${img.job_id}${ext}`);
+    fs.mkdirSync(path.join(dir, SUBDIRS.real), { recursive: true });
+    fs.copyFileSync(imagePath(img), path.join(dir, photo));
+    registerImage(img.product, photo, "real", { label: "Foto a partir do 3D", jobId: img.job_id, parentId: img.id });
+  }
+  return approvedId;
 }
 
 export function setCandidateStatus(id: number, status: "rejected" | "pending") {
   const img = getImage(id);
   if (img.kind !== "generated") throw new HttpError(400, "Só candidatas geradas têm status");
   if (img.status === "approved") {
-    // Undo the approval: drop the approved copy (and its exports).
+    // Undo the approval: drop the approved copy (and its exports), and the product photo made from it (from the 3D).
     const d = db();
-    const copies = d.prepare("SELECT * FROM images WHERE parent_id = ? AND kind = 'approved'").all(id) as ImageRow[];
+    const copies = d.prepare("SELECT * FROM images WHERE parent_id = ? AND kind IN ('approved', 'real')").all(id) as ImageRow[];
     for (const copy of copies) {
       const exports = d.prepare("SELECT * FROM images WHERE parent_id = ? AND kind = 'export'").all(copy.id) as ImageRow[];
       for (const e of exports) deleteImage(e.id);

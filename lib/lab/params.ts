@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LAB_FONTS, LAB_ICONS } from "./fonts";
+import { readDesign } from "./svg/design";
 
 /**
  * Parameters of a parametric Lab tool. One list drives the form (UI), the OpenSCAD `-D` flags
@@ -31,11 +32,24 @@ export type Param =
   | (Base & { type: "multi"; default: string; options: Option[] })
   | (Base & { type: "font"; default: string })
   /** One of LAB_ICONS by id, or "none". */
-  | (Base & { type: "icon"; default: string });
+  | (Base & { type: "icon"; default: string })
+  /** A drawing edited in the SVG editor: a saved design (JSON, see lib/lab/svg) or a raw SVG file. */
+  | (Base & { type: "svg"; default: string });
 
 export type ParamValues = Record<string, string | number>;
 
 export const defaultValues = (params: Param[]): ParamValues => Object.fromEntries(params.map((p) => [p.id, p.default]));
+
+/** Where a piece starts: the tool's sample (defaults) or empty — no text typed, no drawing — with the other defaults. */
+export type StartFrom = "sample" | "blank";
+
+export const blankValues = (params: Param[]): ParamValues =>
+  Object.fromEntries(params.map((p) => [p.id, p.type === "text" || p.type === "svg" ? "" : p.default]));
+
+export const startValues = (params: Param[], from: StartFrom) => (from === "blank" ? blankValues(params) : defaultValues(params));
+
+/** The content that makes the piece (the name, the drawing): the first text or drawing param. */
+export const mainParam = (params: Param[]) => params.find((p) => p.type === "text" || p.type === "svg");
 
 /** A param is "set" when its text is not empty and its choice is not "none". */
 export const isSet = (v: string | number | undefined) => v !== undefined && v !== "none" && String(v).trim() !== "";
@@ -69,7 +83,9 @@ export function paramsSchema(params: Param[]) {
               ? z.string().refine((v) => listValue(v).every((x) => p.options.some((o) => o.value === x)), "opção inválida")
             : p.type === "font"
               ? z.enum(LAB_FONTS.map((f) => f.family) as [string, ...string[]])
-              : z.enum(["none", ...LAB_ICONS.map((i) => i.id)] as [string, ...string[]]);
+              : p.type === "svg"
+                ? z.string().max(4_000_000).refine((v) => readDesign(v) !== null, "envie o SVG (o arquivo em texto) ou o desenho salvo pelo editor")
+                : z.enum(["none", ...LAB_ICONS.map((i) => i.id)] as [string, ...string[]]);
     shape[p.id] = z.optional(base).default(p.default as never).describe(p.hint ? `${p.label}. ${p.hint}` : p.label);
   }
   return z.object(shape);

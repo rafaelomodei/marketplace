@@ -6,7 +6,7 @@ import model from "./bag-tag.scad";
 const parts = nameTagParts({ label: "Etiqueta e alça", color: "#7E57C2" }, "#FFFFFF");
 const shared = nameTagParams({
   textLabel: "Nome que vai na etiqueta",
-  text: "Sérgio",
+  text: "Rafael",
   font: "Titan One",
   topHint: "Opcional — por exemplo a turma ou a escola. Em branco, a etiqueta fica com uma linha só.",
   // Like the original idea: letters printed apart and pressed into the recessed base, no AMS needed.
@@ -28,7 +28,7 @@ export const bagTag: LabTool = {
   parts,
   ...nameTagHooks(parts),
   presets: [
-    { id: "nome", label: "Só o nome", values: { text: "Sérgio", font: "Titan One" } },
+    { id: "nome", label: "Só o nome", values: { text: "Rafael", font: "Titan One" } },
     {
       id: "escola",
       label: "Turma e nome",

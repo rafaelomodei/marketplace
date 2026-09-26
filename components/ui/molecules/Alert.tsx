@@ -1,10 +1,11 @@
-import { CircleAlert, CircleCheck, Info, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Icon } from "../atoms/Icon";
 
 const TONES = {
   info: { box: "bg-sky/50 text-ink", icon: Info },
   success: { box: "bg-success-soft text-success", icon: CircleCheck },
+  warning: { box: "bg-warning-soft text-warning", icon: TriangleAlert },
   danger: { box: "bg-danger-soft text-danger", icon: CircleAlert },
 } as const;
 

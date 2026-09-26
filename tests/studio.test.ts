@@ -215,12 +215,15 @@ describe("actions (future MCP tools)", async () => {
   });
 
   it("guides the flow in order", () => {
-    const base = { stage: "create" as const, real: 2, style: 0, generated: 0, pendingReview: 0, approved: 0, exported: 0, activeJobs: 0 };
+    const base = { stage: "create" as const, real: 2, render: 0, style: 0, generated: 0, pendingReview: 0, approved: 0, exported: 0, activeJobs: 0 };
     expect(nextStep({ ...base, real: 0 }).step).toBe("photos");
     expect(nextStep(base).step).toBe("create");
     expect(nextStep({ ...base, activeJobs: 1 }).tone).toBe("waiting");
     expect(nextStep({ ...base, generated: 2, pendingReview: 2 }).step).toBe("review");
     expect(nextStep({ ...base, generated: 2, approved: 1 }).step).toBe("publish");
     expect(nextStep({ ...base, stage: "ready" }).tone).toBe("done");
+    // made in the Lab: only 3D pictures → turn them into real-looking photos first
+    expect(nextStep({ ...base, real: 0, render: 4 })).toMatchObject({ step: "create", cta: "Criar fotos reais" });
+    expect(nextStep({ ...base, real: 0, render: 4, activeJobs: 2 }).tone).toBe("waiting");
   });
 });

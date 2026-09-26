@@ -10,7 +10,9 @@ lib/actions/products.ts    list_products, get_product, get_next_step, create_pro
                            move_product, add_images (base64), delete_image
 lib/actions/generation.ts  get_catalog, generate_images, get_job, cancel_job, retry_job,
                            review_image, reframe_image, export_images
-lib/actions/lab.ts         list_lab_tools, render_lab_model (gera o 3MF de uma ferramenta do Lab)
+lib/actions/lab.ts         list_lab_tools, render_lab_model (gera o 3MF de uma ferramenta do Lab),
+                           list/get/save/rename/duplicate/delete_lab_creation (histórico "Minhas criações"),
+                           send_lab_creation_to_studio (criação → imagens do 3D renderizadas no servidor → produto)
 lib/actions/index.ts       ACTIONS (registro), listActions(), callAction(nome, input)
 ```
 

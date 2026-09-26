@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Lightbulb } from "lucide-react";
+import { ArrowRight, Box, Lightbulb, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { Button, Card, Dropzone, Field, Icon, ImageTile, Input, SectionHeader, Spinner, Textarea } from "@/components/ui";
+import { Button, ButtonLink, Card, Dropzone, Field, Icon, ImageTile, Input, SectionHeader, Spinner, Textarea } from "@/components/ui";
 import { api, fileUrl, reportError } from "@/lib/client/api";
 import type { StepProps } from "./shared";
 
@@ -24,10 +24,11 @@ const ZONES = [
 const TIPS = ["Luz natural, sem flash", "2 a 4 ângulos diferentes", "Produto inteiro no quadro", "Fundo simples ajuda, mas não é obrigatório"];
 
 export function PhotosStep({ product, reload, preview, goTo }: StepProps) {
-  const hasPhotos = product.images.some((i) => i.kind === "real");
+  const hasPhotos = product.images.some((i) => i.kind === "real" || i.kind === "render");
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
       <div className="space-y-14">
+        <LabRenders product={product} reload={reload} preview={preview} />
         {ZONES.map((z) => (
           <UploadZone key={z.kind} zone={z} product={product} reload={reload} preview={preview} optional={z.kind === "style"} />
         ))}
@@ -56,6 +57,45 @@ export function PhotosStep({ product, reload, preview, goTo }: StepProps) {
         </Card>
       </aside>
     </div>
+  );
+}
+
+/** Products made in the Lab: the pictures of the 3D model (references for the AI, never in the ad) and a way back. */
+function LabRenders({ product, reload, preview }: Pick<StepProps, "product" | "reload" | "preview">) {
+  const [refreshing, setRefreshing] = useState(false);
+  const renders = product.images.filter((i) => i.kind === "render");
+  const lab = product.meta.lab;
+  if (!lab || !renders.length) return null;
+
+  async function refresh() {
+    setRefreshing(true);
+    await api(`/api/lab/creations/${lab!.creation}/studio`, { method: "POST" }).catch(reportError);
+    await reload();
+    setRefreshing(false);
+  }
+
+  return (
+    <section className="space-y-5">
+      <SectionHeader
+        size="heading"
+        eyebrow={`Do Lab · ${lab.toolName}`}
+        title="Modelo 3D"
+        description="Imagens do modelo que você criou no Lab. A IA usa para criar fotos da peça como se já estivesse impressa — elas não vão para o anúncio."
+      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {renders.map((img) => (
+          <ImageTile key={img.id} src={fileUrl(product.slug, img.rel, 400)} onZoom={() => preview(img.rel)} />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <ButtonLink href={`/lab/${lab.tool}/${lab.creation}`} size="sm">
+          <Icon icon={Box} /> Abrir no Lab
+        </ButtonLink>
+        <Button size="sm" variant="ghost" disabled={refreshing} onClick={refresh} title="Mudou a peça no Lab? Refaz as imagens do 3D com a versão atual.">
+          {refreshing ? <Spinner /> : <Icon icon={RefreshCw} />} Atualizar imagens do 3D
+        </Button>
+      </div>
+    </section>
   );
 }
 

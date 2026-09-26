@@ -6,12 +6,14 @@ import { cn } from "@/lib/cn";
 import { Icon } from "../atoms/Icon";
 import { Spinner } from "../atoms/Spinner";
 
-/** Drag-and-drop or click to pick images. Can be a big empty-state block or a compact tile. */
+/** Drag-and-drop or click to pick files (images by default). Can be a big empty-state block or a compact tile. */
 export function Dropzone({
   onFiles,
   busy,
   title = "Arraste as fotos aqui",
   hint = "ou clique para escolher · JPG, PNG ou WEBP",
+  accept = "image/png,image/jpeg,image/webp",
+  multiple = true,
   compact,
   className,
 }: {
@@ -19,6 +21,8 @@ export function Dropzone({
   busy?: boolean;
   title?: string;
   hint?: string;
+  accept?: string;
+  multiple?: boolean;
   compact?: boolean;
   className?: string;
 }) {
@@ -53,8 +57,8 @@ export function Dropzone({
       </span>
       <input
         type="file"
-        accept="image/png,image/jpeg,image/webp"
-        multiple
+        accept={accept}
+        multiple={multiple}
         hidden
         onChange={(e) => {
           if (e.target.files?.length) onFiles(Array.from(e.target.files));

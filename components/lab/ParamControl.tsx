@@ -7,7 +7,15 @@ import { FontPicker } from "./FontPicker";
 import { IconPicker } from "./IconPicker";
 
 /** Renders the right control for any Lab parameter, so new tools get their form for free. */
-export function ParamControl({ param: p, values, onChange }: { param: Param; values: ParamValues; onChange: (id: string, v: string | number) => void }) {
+export function ParamControl({
+  param: p,
+  values,
+  onChange,
+}: {
+  param: Param;
+  values: ParamValues;
+  onChange: (id: string, v: string | number) => void;
+}) {
   const value = values[p.id];
   switch (p.type) {
     case "text":
@@ -49,6 +57,8 @@ export function ParamControl({ param: p, values, onChange }: { param: Param; val
           <IconPicker value={String(value)} onChange={(v) => onChange(p.id, v)} />
         </div>
       );
+    case "svg":
+      return null; // edited in the full-screen drawing editor (DesignWorkbench)
     case "font": {
       // Preview with the text this font is used for (the top line's font shows the top text).
       const text = p.id.startsWith("top") ? values.top_text || values.text : values.text;

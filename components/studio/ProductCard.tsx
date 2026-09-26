@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
           {product.activeJobs > 0 && <Spinner className="size-3.5 text-warning" />}
         </div>
         <p className="truncate text-sm text-ink-muted">
-          {product.counts.real} fotos · {product.counts.approved} aprovadas{product.counts.export ? ` · ${product.counts.export} arquivos` : ""}
+          {!product.counts.real && product.counts.render ? "Modelo 3D do Lab" : `${product.counts.real} fotos`} · {product.counts.approved} aprovadas{product.counts.export ? ` · ${product.counts.export} arquivos` : ""}
         </p>
       </div>
     </Link>

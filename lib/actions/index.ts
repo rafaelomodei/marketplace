@@ -32,6 +32,13 @@ const ALL = [
   g.exportImagesAction,
   lab.listLabToolsAction,
   lab.renderLabModelAction,
+  lab.listLabCreationsAction,
+  lab.getLabCreationAction,
+  lab.saveLabCreationAction,
+  lab.renameLabCreationAction,
+  lab.duplicateLabCreationAction,
+  lab.deleteLabCreationAction,
+  lab.sendLabCreationToStudioAction,
 ] as unknown as Action[];
 
 export const ACTIONS: Record<string, Action> = Object.fromEntries(ALL.map((a) => [a.name, a]));

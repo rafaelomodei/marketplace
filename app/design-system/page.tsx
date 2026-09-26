@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Camera, Download, MousePointerClick, PackageOpen, Palette, SunMedium, Wand2 } from "lucide-react";
+import { ArrowRight, Camera, Download, MousePointer2, MousePointerClick, PackageOpen, Palette, Redo2, SunMedium, Undo2, Wand2, ZoomIn } from "lucide-react";
 import { useState } from "react";
 import {
   Alert,
@@ -11,13 +11,21 @@ import {
   Code,
   Container,
   Disclosure,
+  Dropdown,
   Dropzone,
   EmptyState,
   FeatureGrid,
   Field,
+  FloatingPanel,
   Heading,
   Icon,
   IconTile,
+  MenuItem,
+  NumberStepper,
+  ToolButton,
+  ToolDivider,
+  Toolbar,
+  InlineEdit,
   Input,
   Lead,
   Muted,
@@ -45,6 +53,9 @@ export default function DesignSystem() {
   const [multi, setMulti] = useState(["1x1", "3x4"]);
   const [step, setStep] = useState("create");
   const [size, setSize] = useState(14);
+  const [tool, setTool] = useState("select");
+  const [height, setHeight] = useState(0.8);
+  const [pieceName, setPieceName] = useState("Morango");
 
   return (
     <>
@@ -204,6 +215,7 @@ export default function DesignSystem() {
           <div className="grid gap-3 md:grid-cols-3">
             <Alert>Informação neutra.</Alert>
             <Alert tone="success">Arquivos prontos.</Alert>
+            <Alert tone="warning">2 textos foram ignorados.</Alert>
             <Alert tone="danger" onClose={() => {}}>
               Algo deu errado.
             </Alert>
@@ -240,6 +252,52 @@ export default function DesignSystem() {
               { icon: Download, title: "Linguagem simples", description: "Sem termos técnicos na tela principal." },
             ]}
           />
+        </Group>
+
+        <Group title="Editores" description="Peças para telas cheias, como o editor de desenhos do Lab: ficam flutuando sobre a área de trabalho.">
+          <div className="relative grid gap-6 overflow-visible rounded-panel bg-surface p-6 md:grid-cols-[auto_1fr_1fr]">
+            <Toolbar label="Exemplo de ferramentas">
+              <ToolButton title="Selecionar" shortcut="V" active={tool === "select"} onClick={() => setTool("select")}>
+                <Icon icon={MousePointer2} className="size-5" />
+              </ToolButton>
+              <ToolButton title="Aproximar" active={tool === "zoom"} onClick={() => setTool("zoom")}>
+                <Icon icon={ZoomIn} className="size-5" />
+              </ToolButton>
+              <ToolDivider />
+              <ToolButton title="Desfazer">
+                <Icon icon={Undo2} className="size-5" />
+              </ToolButton>
+              <ToolButton title="Refazer" disabled>
+                <Icon icon={Redo2} className="size-5" />
+              </ToolButton>
+            </Toolbar>
+            <FloatingPanel title="FloatingPanel" onClose={() => {}}>
+              <p className="text-sm text-ink-muted">Título, fechar e conteúdo com rolagem.</p>
+            </FloatingPanel>
+            <div className="space-y-4">
+              <NumberStepper label="altura" value={height} onChange={setHeight} min={0} max={5} step={0.1} unit="mm" />
+              <div className="text-sm">
+                <InlineEdit label="Nome da criação" value={pieceName} onChange={setPieceName} />
+              </div>
+              <Dropdown
+                align="start"
+                trigger={(open, toggle) => (
+                  <Button onClick={toggle} aria-expanded={open}>
+                    Dropdown
+                  </Button>
+                )}
+              >
+                {(close) => (
+                  <>
+                    <MenuItem onClick={close}>
+                      <Icon icon={Download} /> Primeira opção
+                    </MenuItem>
+                    <MenuItem onClick={close}>Segunda opção</MenuItem>
+                  </>
+                )}
+              </Dropdown>
+            </div>
+          </div>
         </Group>
 
         <Group title="Fundos pintados" description="Paisagens em SVG com borda de pincel e grão de papel; troque por uma pintura real com a prop image.">

@@ -16,6 +16,8 @@ export type StepId = (typeof STEPS)[number]["id"];
 export type WorkflowState = {
   stage: "create" | "ready";
   real: number;
+  /** Pictures of the 3D model (products made in the Lab). */
+  render: number;
   style: number;
   generated: number;
   pendingReview: number;
@@ -37,6 +39,7 @@ export function stateFromSummary(p: ProductSummary): WorkflowState {
   return {
     stage: p.stage,
     real: p.counts.real,
+    render: p.counts.render,
     style: p.counts.style,
     generated: p.counts.generated,
     pendingReview: p.counts.pendingReview,
@@ -51,6 +54,7 @@ export function stateFromProduct(p: Pick<ProductDetail, "stage" | "images" | "jo
   return {
     stage: p.stage,
     real: count("real"),
+    render: count("render"),
     style: count("style"),
     generated: count("generated"),
     pendingReview: p.images.filter((i) => i.kind === "generated" && i.status === "pending").length,
@@ -62,7 +66,7 @@ export function stateFromProduct(p: Pick<ProductDetail, "stage" | "images" | "jo
 
 /** Which steps are complete, for the stepper. */
 export function completedSteps(s: WorkflowState): Record<StepId, boolean> {
-  return { photos: s.real > 0, create: s.generated > 0, review: s.approved > 0, publish: s.exported > 0 };
+  return { photos: s.real > 0 || s.render > 0, create: s.generated > 0, review: s.approved > 0, publish: s.exported > 0 };
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -71,7 +75,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 export function nextStep(s: WorkflowState): NextStep {
   if (s.stage === "ready")
     return { step: "publish", title: "Produto pronto", description: "Os arquivos estão prontos para o anúncio.", cta: null, tone: "done" };
-  if (!s.real)
+  if (!s.real && !s.render)
     return {
       step: "photos",
       title: "Comece pelas fotos",
@@ -93,6 +97,15 @@ export function nextStep(s: WorkflowState): NextStep {
       title: `${plural(s.pendingReview, "imagem pronta", "imagens prontas")} para você escolher`,
       description: "Aprove as que ficaram fiéis ao produto e descarte o resto.",
       cta: "Escolher imagens",
+      tone: "action",
+    };
+  // Made in the Lab: only pictures of the 3D model so far. Real-looking photos come first; the other modes use them.
+  if (!s.real)
+    return {
+      step: "create",
+      title: "Transforme o modelo 3D em fotos reais",
+      description: "A IA cria fotos da peça como se já estivesse impressa, a partir das imagens do 3D. Aprove as melhores para usar nos outros tipos de imagem.",
+      cta: "Criar fotos reais",
       tone: "action",
     };
   if (!s.approved)

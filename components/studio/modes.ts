@@ -1,4 +1,4 @@
-import { Frame, Palette, Sparkles, SunMedium, type LucideIcon } from "lucide-react";
+import { Box, Frame, Palette, Sparkles, SunMedium, Theater, type LucideIcon } from "lucide-react";
 import type { TileTone } from "@/components/ui";
 import { JOB_TYPE_LABEL, type JobType } from "@/lib/prompts";
 
@@ -27,5 +27,17 @@ export const MODE_UI: Record<JobType, { icon: LucideIcon; tone: TileTone; title:
     tone: "sky",
     title: JOB_TYPE_LABEL.reframe,
     description: "Estende a imagem para outro formato em vez de cortar.",
+  },
+  "from-3d": {
+    icon: Box,
+    tone: "mint",
+    title: "Foto real do 3D",
+    description: "Transforma o modelo 3D do Lab em fotos da peça já impressa, com camadas e acabamento de verdade.",
+  },
+  staged: {
+    icon: Theater,
+    tone: "peach",
+    title: JOB_TYPE_LABEL.staged,
+    description: "Mostra o produto sendo usado numa cena que você descreve — sem precisar de foto de cenário.",
   },
 };

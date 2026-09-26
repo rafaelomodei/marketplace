@@ -38,6 +38,19 @@ CREATE TABLE IF NOT EXISTS jobs (
   started_at TEXT,
   finished_at TEXT
 );
+CREATE TABLE IF NOT EXISTS lab_creations (
+  id TEXT PRIMARY KEY,
+  tool TEXT NOT NULL,
+  name TEXT NOT NULL,
+  "values" TEXT NOT NULL,
+  colors TEXT NOT NULL DEFAULT '{}',
+  custom_name INTEGER NOT NULL DEFAULT 0,
+  product TEXT,
+  thumbnail BLOB,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS lab_creations_tool ON lab_creations(tool, updated_at);
 `;
 
 export type ImageRow = {
@@ -71,6 +84,12 @@ export type JobRow = {
   finished_at: string | null;
 };
 
+/** Columns added after a table was created: databases made before get them here. */
+function addColumn(d: Database.Database, table: string, column: string, type: string) {
+  const has = (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === column);
+  if (!has) d.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+}
+
 const g = globalThis as unknown as { __studioDb?: Database.Database };
 
 export function db(): Database.Database {
@@ -79,6 +98,8 @@ export function db(): Database.Database {
     const d = new Database(path.join(DATA_DIR, "app.db"));
     d.pragma("journal_mode = WAL");
     d.exec(SCHEMA);
+    addColumn(d, "lab_creations", "custom_name", "INTEGER NOT NULL DEFAULT 0");
+    addColumn(d, "lab_creations", "product", "TEXT");
     g.__studioDb = d;
   }
   return g.__studioDb;

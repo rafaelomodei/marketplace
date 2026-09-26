@@ -35,6 +35,18 @@ export const jobRequest = z.discriminatedUnion("type", [
     extra,
   }),
   z.object({ type: z.literal("reframe"), sourceImageId: imageId, aspect, extra }),
+  z.object({
+    type: z.literal("from-3d").describe("Fotos reais da peça impressa a partir das imagens do modelo 3D (produtos vindos do Lab)"),
+    renderImageIds: ids.describe("Imagens do modelo 3D (kind=render); uma foto por imagem, mantendo ângulo e enquadramento"),
+    extra,
+  }),
+  z.object({
+    type: z.literal("staged").describe("Produto em uso numa cena descrita em texto (sem foto de cenário)"),
+    productImageIds: ids.describe("Fotos do produto (kind=real)"),
+    setting: z.string().min(3).describe("A cena, ex.: pendurado no zíper de uma mochila"),
+    aspect: aspect.default("1:1"),
+    extra,
+  }),
 ]);
 
 export const getCatalogAction = defineAction({

@@ -15,6 +15,8 @@ export type Stage = (typeof STAGES)[number];
 /** Subfolder of a product that holds each kind of image. */
 export const SUBDIRS = {
   real: "real",
+  /** Pictures of the 3D model (products made in the Lab): references until real photos exist. */
+  render: "renders",
   style: "style-refs",
   generated: "generated",
   approved: "approved",
