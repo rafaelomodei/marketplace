@@ -76,16 +76,6 @@ Na substituição:
 - Imagem 1 = imagem base. Mude só o formato do quadro, estendendo o cenário para as bordas novas.
 - A região original fica idêntica. O produto não muda de tamanho, posição relativa nem detalhe, e nunca é cortado.
 
-### Foto real do 3D (`from-3d`)
-- A Imagem 1 é uma **imagem de computador do modelo 3D** (vinda do editor), não uma foto. As imagens de MODELO 3D seguintes são o mesmo modelo de outros ângulos.
-- Crie a **foto real** dessa peça depois de impressa numa impressora 3D FDM, em fundo branco puro (#FFFFFF), luz de estúdio suave e sombra de contato sutil.
-- Mesmo ângulo, mesma orientação e mesmo enquadramento da Imagem 1. A peça inteira no quadro, ocupando cerca de 80% da maior dimensão.
-- **Geometria idêntica ao modelo**: contorno, furos, fendas, espessura, relevos e a altura de cada cor. Textos letra por letra, mesma fonte. Nada a mais, nada a menos.
-- O que muda é só o **material**: plástico impresso de verdade, com linhas de camada finas e regulares nas laterais, topo levemente texturizado, cantos com o leve arredondamento da impressão, sem brilho de plástico injetado.
-- **Cores**: use as cores reais de cada parte informadas no job (e as fotos de REFERÊNCIA DE COR, quando houver). As cores do modelo 3D são só aproximadas; se divergirem, valem o filamento e a foto dele.
-- Ignore o que é só do editor: grade do chão, contornos de seleção, fundo do visualizador.
-- Peças que o job diz não serem impressas (ex.: um clipe de papel encaixado) aparecem como o objeto real (metal), no mesmo lugar.
-
 ### Em uso (`staged`)
 - Crie uma **foto realista** do produto sendo usado na CENA descrita no job (ex.: preso na borda de um caderno, pendurado no zíper de uma mochila).
 - O produto segue a seção 2 à risca: forma, cores, textos e acabamento idênticos às fotos do produto, na escala real informada.

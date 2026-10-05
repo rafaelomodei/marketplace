@@ -254,7 +254,7 @@ export default function DesignSystem() {
           />
         </Group>
 
-        <Group title="Editores" description="Peças para telas cheias, como o editor de desenhos do Lab: ficam flutuando sobre a área de trabalho.">
+        <Group title="Editores" description="Peças para telas cheias ficam flutuando sobre a área de trabalho.">
           <div className="relative grid gap-6 overflow-visible rounded-panel bg-surface p-6 md:grid-cols-[auto_1fr_1fr]">
             <Toolbar label="Exemplo de ferramentas">
               <ToolButton title="Selecionar" shortcut="V" active={tool === "select"} onClick={() => setTool("select")}>
