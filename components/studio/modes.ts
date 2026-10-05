@@ -1,4 +1,4 @@
-import { Frame, Palette, Sparkles, SunMedium, type LucideIcon } from "lucide-react";
+import { Frame, Palette, Sparkles, SunMedium, Theater, type LucideIcon } from "lucide-react";
 import type { TileTone } from "@/components/ui";
 import { JOB_TYPE_LABEL, type JobType } from "@/lib/prompts";
 
@@ -27,5 +27,11 @@ export const MODE_UI: Record<JobType, { icon: LucideIcon; tone: TileTone; title:
     tone: "sky",
     title: JOB_TYPE_LABEL.reframe,
     description: "Estende a imagem para outro formato em vez de cortar.",
+  },
+  staged: {
+    icon: Theater,
+    tone: "peach",
+    title: JOB_TYPE_LABEL.staged,
+    description: "Mostra o produto sendo usado numa cena que você descreve — sem precisar de foto de cenário.",
   },
 };

@@ -15,10 +15,10 @@ type QueueState = { started: boolean; running: Map<string, AbortController> };
 const g = globalThis as unknown as { __studioQueue?: QueueState };
 const state: QueueState = (g.__studioQueue ??= { started: false, running: new Map() });
 
-/** Request shape for recolor: each part may list several filaments; one job per combination. */
-export type JobRequest =
-  | Exclude<JobParams, { type: "recolor" }>
-  | { type: "recolor"; sourceImageId: number; colors: { part: string; filamentIds: string[] }[]; extra?: string };
+/**
+ * What callers ask for. Recolor: each part may list several filaments, one job per combination.
+ */
+export type JobRequest = Exclude<JobParams, { type: "recolor" }> | { type: "recolor"; sourceImageId: number; colors: { part: string; filamentIds: string[] }[]; extra?: string };
 
 export function expandRequest(req: JobRequest): JobParams[] {
   if (req.type !== "recolor") return [req];
@@ -33,6 +33,7 @@ export function expandRequest(req: JobRequest): JobParams[] {
 
 function validate(product: string, p: JobParams) {
   if (p.type === "scene" && !p.sceneImageId) throw new HttpError(400, "Selecione a imagem de cenário");
+  if (p.type === "staged" && !p.setting.trim()) throw new HttpError(400, "Descreva a cena");
   const ids = jobInputIds(p);
   if (!ids.length) throw new HttpError(400, "Selecione ao menos uma imagem do produto");
   if (p.type === "scene" && !p.productImageIds.length) throw new HttpError(400, "Selecione ao menos uma foto do produto");
@@ -45,13 +46,12 @@ export function createJobs(product: string, req: JobRequest): string[] {
 
 function enqueue(product: string, jobs: JobParams[]): string[] {
   requireProduct(product);
-  const meta = readMeta(product);
   const skill = generationSkill();
   const ids: string[] = [];
   for (const job of jobs) {
     const params = withFilamentRefs(job);
     validate(product, params);
-    const { prompt, label } = buildPrompt(params, { meta, filament: findFilament, skill });
+    const { prompt, label } = buildPrompt(params, { meta: readMeta(product), filament: findFilament, skill });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
     db()
       .prepare(
@@ -64,15 +64,17 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   return ids;
 }
 
-/** Attaches the local photos of each chosen filament (in order) so Codex sees the real color and finish. */
+/**
+ * Attaches the local photos of each filament (in order) so Codex sees the real color and finish.
+ */
 function withFilamentRefs(p: JobParams): JobParams {
-  if (p.type !== "recolor") return p;
-  const ids = [...new Set(p.colors.map((c) => c.filamentId))];
-  const refs = ids.map((filamentId) => {
-    const f = findFilament(filamentId);
-    return { filamentId, files: f ? filamentRefFiles(f) : [] };
-  });
-  return { ...p, refs };
+  const refsOf = (ids: string[], perFilament?: number) =>
+    [...new Set(ids)].map((filamentId) => {
+      const f = findFilament(filamentId);
+      return { filamentId, files: (f ? filamentRefFiles(f) : []).slice(0, perFilament) };
+    });
+  if (p.type === "recolor") return { ...p, refs: refsOf(p.colors.map((c) => c.filamentId)) };
+  return p;
 }
 
 /** Absolute paths of everything attached to Codex, in prompt order. */

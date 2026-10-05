@@ -35,6 +35,13 @@ export const jobRequest = z.discriminatedUnion("type", [
     extra,
   }),
   z.object({ type: z.literal("reframe"), sourceImageId: imageId, aspect, extra }),
+  z.object({
+    type: z.literal("staged").describe("Produto em uso numa cena descrita em texto (sem foto de cenário)"),
+    productImageIds: ids.describe("Fotos do produto (kind=real)"),
+    setting: z.string().min(3).describe("A cena, ex.: pendurado no zíper de uma mochila"),
+    aspect: aspect.default("1:1"),
+    extra,
+  }),
 ]);
 
 export const getCatalogAction = defineAction({

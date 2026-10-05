@@ -59,6 +59,7 @@ export function PhotosStep({ product, reload, preview, goTo }: StepProps) {
   );
 }
 
+
 function UploadZone({
   zone,
   product,

@@ -23,7 +23,15 @@ export type JobParams =
       refs?: { filamentId: string; files: string[] }[];
       extra?: string;
     }
-  | { type: "reframe"; sourceImageId: number; aspect: Aspect; extra?: string };
+  | { type: "reframe"; sourceImageId: number; aspect: Aspect; extra?: string }
+  | {
+      /** The product in use, in a scene described in words (no scene photo needed). */
+      type: "staged";
+      productImageIds: number[];
+      setting: string;
+      aspect: Aspect;
+      extra?: string;
+    };
 
 export type JobType = JobParams["type"];
 
@@ -32,6 +40,7 @@ export const JOB_TYPE_LABEL: Record<JobType, string> = {
   scene: "Cenário",
   recolor: "Variação de cor",
   reframe: "Reenquadrar",
+  staged: "Em uso",
 };
 
 /** Upgrades params stored by older versions (scene used to take a list of style refs). */
@@ -55,6 +64,8 @@ export function jobInputIds(p: JobParams): number[] {
     case "recolor":
     case "reframe":
       return [p.sourceImageId];
+    case "staged":
+      return p.productImageIds;
   }
 }
 
@@ -133,6 +144,13 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       aspect = p.aspect;
       images.push("Imagem 1: BASE — manter idêntica, só estender o quadro.");
       task.push("Mudar o formato estendendo o cenário para as bordas novas (seção 4, Reenquadrar).");
+      break;
+    case "staged":
+      label = "em-uso";
+      aspect = p.aspect;
+      images.push(`${imageRange(1, p.productImageIds.length)}: PRODUTO — fotos do mesmo objeto.`);
+      task.push("Criar uma foto realista do produto em uso, na cena descrita abaixo (seção 4, Em uso).");
+      task.push(`CENA: ${p.setting.trim()}`);
       break;
   }
 

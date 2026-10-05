@@ -85,9 +85,11 @@ export function writeMeta(slug: string, patch: Partial<ProductMeta>): ProductMet
   return meta;
 }
 
-export function createProduct(name: string, meta: Partial<ProductMeta> = {}): string {
-  const slug = slugify(name);
+/** `unique`: when the name is taken, use "name-2", "name-3"… instead of failing. */
+export function createProduct(name: string, meta: Partial<ProductMeta> = {}, opts: { unique?: boolean } = {}): string {
+  let slug = slugify(name);
   if (!slug) throw new HttpError(400, "Nome inválido");
+  if (opts.unique) for (let i = 2; locateProduct(slug); i++) slug = `${slugify(name).slice(0, 56)}-${i}`;
   if (locateProduct(slug)) throw new HttpError(409, `Já existe um produto "${slug}"`);
   const dir = path.join(stageDir("create"), slug);
   for (const sub of [SUBDIRS.real, SUBDIRS.style]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
@@ -173,7 +175,9 @@ export function listProducts(): ProductSummary[] {
       if (img.kind === "generated" && img.status === "pending") counts.pendingReview++;
     }
     const cover =
-      images.find((i) => i.kind === "approved")?.rel ?? images.find((i) => i.kind === "real")?.rel ?? null;
+      images.find((i) => i.kind === "approved")?.rel ??
+      images.find((i) => i.kind === "real")?.rel ??
+      null;
     const activeJobs = (
       d.prepare("SELECT COUNT(*) n FROM jobs WHERE product = ? AND status IN ('queued','running')").get(p.slug) as {
         n: number;
@@ -261,14 +265,15 @@ export function approveImage(id: number): number {
   fs.mkdirSync(path.join(dir, SUBDIRS.approved), { recursive: true });
   fs.copyFileSync(imagePath(img), path.join(dir, rel));
   db().prepare("UPDATE images SET status = 'approved' WHERE id = ?").run(id);
-  return registerImage(img.product, rel, "approved", { label: img.label, jobId: img.job_id, parentId: img.id });
+  const approvedId = registerImage(img.product, rel, "approved", { label: img.label, jobId: img.job_id, parentId: img.id });
+  return approvedId;
 }
 
 export function setCandidateStatus(id: number, status: "rejected" | "pending") {
   const img = getImage(id);
   if (img.kind !== "generated") throw new HttpError(400, "Só candidatas geradas têm status");
   if (img.status === "approved") {
-    // Undo the approval: drop the approved copy (and its exports).
+    // Undo the approval: drop the approved copy and its exports.
     const d = db();
     const copies = d.prepare("SELECT * FROM images WHERE parent_id = ? AND kind = 'approved'").all(id) as ImageRow[];
     for (const copy of copies) {

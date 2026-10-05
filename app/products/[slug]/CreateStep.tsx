@@ -24,9 +24,8 @@ import type { ImageRow } from "@/lib/db";
 import type { Aspect } from "@/lib/prompts";
 import type { StepProps } from "./shared";
 
-type Mode = "white-bg" | "scene" | "recolor";
+type Mode = "white-bg" | "scene" | "recolor" | "staged";
 type ColorRow = { part: string; filamentIds: string[] };
-const MODES: Mode[] = ["white-bg", "scene", "recolor"];
 const ASPECT_LABEL: Record<Aspect, string> = { ref: "Igual ao cenário", "1:1": "Quadrada 1:1", "3:4": "Retrato 3:4" };
 
 function toggle<T>(list: T[], item: T): T[] {
@@ -37,15 +36,17 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
   const real = product.images.filter((i) => i.kind === "real");
   const style = product.images.filter((i) => i.kind === "style");
   const approved = product.images.filter((i) => i.kind === "approved");
+  const modes: Mode[] = ["white-bg", "staged", "scene", "recolor"];
 
   const [mode, setMode] = useState<Mode>("white-bg");
+  const [setting, setSetting] = useState("");
   const [productIds, setProductIds] = useState<number[]>(() => real.map((i) => i.id).slice(0, 3));
   const [sceneId, setSceneId] = useState<number | null>(style[0]?.id ?? null);
   const [replaceTarget, setReplaceTarget] = useState("");
   const [sourceId, setSourceId] = useState<number | null>(approved[0]?.id ?? real[0]?.id ?? null);
   const [colors, setColors] = useState<ColorRow[]>([{ part: "produto inteiro", filamentIds: [] }]);
   const [aspectChoice, setAspect] = useState<Aspect>("ref");
-  // "ref" (keep the scene's own ratio) only makes sense when there is a scene.
+  // "ref" (keep the scene's own ratio) only makes sense when there is a scene. Photos from the 3D are always square.
   const aspectOptions: Aspect[] = mode === "scene" ? ["ref", "1:1", "3:4"] : ["1:1", "3:4"];
   const aspect = aspectOptions.includes(aspectChoice) ? aspectChoice : aspectOptions[0];
   const [extra, setExtra] = useState("");
@@ -65,13 +66,18 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
       />
     );
 
-  const jobCount = mode === "recolor" ? colors.filter((c) => c.filamentIds.length).reduce((n, c) => n * c.filamentIds.length, 1) : 1;
+  const jobCount =
+    mode === "recolor"
+      ? colors.filter((c) => c.filamentIds.length).reduce((n, c) => n * c.filamentIds.length, 1)
+      : 1;
   const canSubmit =
     mode === "white-bg"
       ? productIds.length > 0
       : mode === "scene"
         ? productIds.length > 0 && sceneId !== null
-        : sourceId !== null && colors.some((c) => c.filamentIds.length);
+        : mode === "staged"
+            ? productIds.length > 0 && setting.trim().length > 2
+            : sourceId !== null && colors.some((c) => c.filamentIds.length);
 
   async function submit() {
     setSending(true);
@@ -80,7 +86,9 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
         ? { type: mode, sourceImageId: sourceId, colors, extra }
         : mode === "scene"
           ? { type: mode, sceneImageId: sceneId, productImageIds: productIds, replaceTarget, aspect, extra }
-          : { type: mode, productImageIds: productIds, aspect, extra };
+          : mode === "staged"
+              ? { type: mode, productImageIds: productIds, setting, aspect, extra }
+              : { type: mode, productImageIds: productIds, aspect, extra };
     try {
       await api("/api/jobs", { method: "POST", json: { product: product.slug, request } });
       await reload();
@@ -112,11 +120,19 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
         <section className="space-y-5">
           <SectionHeader size="heading" title="O que você quer criar?" />
           <div role="radiogroup" className="grid gap-3 sm:grid-cols-3">
-            {MODES.map((m) => (
+            {modes.map((m) => (
               <OptionCard key={m} {...MODE_UI[m]} selected={mode === m} onSelect={() => setMode(m)} />
             ))}
           </div>
         </section>
+
+        {mode === "staged" && (
+          <FormSection title="Onde o produto aparece" hint="Descreva a cena em poucas palavras. A IA monta uma foto simples e natural, com o produto em destaque.">
+            <div className="space-y-3">
+              <Textarea rows={2} value={setting} onChange={(e) => setSetting(e.target.value)} placeholder="Ex.: pendurado no zíper de uma mochila escolar" />
+            </div>
+          </FormSection>
+        )}
 
         {mode !== "recolor" && (
           <FormSection title="Fotos do produto" hint="Já marcamos as primeiras. A IA usa todas as marcadas como o mesmo objeto, visto de ângulos diferentes.">

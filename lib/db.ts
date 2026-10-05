@@ -71,6 +71,12 @@ export type JobRow = {
   finished_at: string | null;
 };
 
+/** Columns added after a table was created: databases made before get them here. */
+function addColumn(d: Database.Database, table: string, column: string, type: string) {
+  const has = (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === column);
+  if (!has) d.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+}
+
 const g = globalThis as unknown as { __studioDb?: Database.Database };
 
 export function db(): Database.Database {

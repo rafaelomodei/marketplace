@@ -1,6 +1,6 @@
 ---
 name: "marketplace-product-image"
-description: "Gera imagens de anúncio (Shopee / Mercado Livre) de produtos impressos em 3D a partir de fotos reais do produto e de uma imagem de cenário de referência, preservando ao máximo o produto E o cenário. Use junto com a skill imagegen quando o job do Marketplace Studio pedir fundo branco, cenário, variação de cor ou reenquadramento."
+description: "Gera imagens de anúncio (Shopee / Mercado Livre) de produtos impressos em 3D a partir de fotos reais do produto e de uma imagem de cenário de referência, preservando ao máximo o produto E o cenário. Use junto com a skill imagegen quando o job do Marketplace Studio pedir fundo branco, cenário, variação de cor, reenquadramento, foto real a partir do modelo 3D ou produto em uso."
 ---
 
 # Imagens de anúncio com fidelidade máxima
@@ -75,6 +75,12 @@ Na substituição:
 ### Reenquadrar (`reframe`)
 - Imagem 1 = imagem base. Mude só o formato do quadro, estendendo o cenário para as bordas novas.
 - A região original fica idêntica. O produto não muda de tamanho, posição relativa nem detalhe, e nunca é cortado.
+
+### Em uso (`staged`)
+- Crie uma **foto realista** do produto sendo usado na CENA descrita no job (ex.: preso na borda de um caderno, pendurado no zíper de uma mochila).
+- O produto segue a seção 2 à risca: forma, cores, textos e acabamento idênticos às fotos do produto, na escala real informada.
+- A cena é inventada, mas simples e crível: luz natural, poucos elementos, fundo que não disputa atenção. O produto é o foco e aparece inteiro, nítido, sem ser cortado.
+- Nada de pessoas com rosto, marcas, logos ou textos novos na cena. Mãos podem aparecer se a cena pedir.
 
 ## 5. Formatos
 - `1:1`: tela quadrada (1024x1024).
