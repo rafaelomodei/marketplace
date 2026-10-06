@@ -7,8 +7,10 @@ import {
   moveProduct,
   saveUpload,
   writeMeta,
+  HttpError,
 } from "../products";
 import { nextStep, stateFromProduct, stateFromSummary } from "../workflow";
+import { listingRequirements } from "../listing";
 import { defineAction } from "./define";
 
 export const slug = z.string().min(1).describe("Identificador do produto (nome da pasta), ex.: cavalo-carrossel");
@@ -72,7 +74,7 @@ export const moveProductAction = defineAction({
   title: "Mudar etapa do produto",
   description: "Marca o produto como pronto (ready) ou volta para criação (create). Move a pasta.",
   input: z.object({ slug, stage: z.enum(["create", "ready"]) }),
-  run: ({ slug, stage }) => moveProduct(slug, stage),
+  run: ({ slug, stage }) => { if (stage === "ready" && !listingRequirements(slug).ready) throw new HttpError(400, "A preparação para cadastro ainda não está completa"); return moveProduct(slug, stage); },
 });
 
 export const addImagesAction = defineAction({

@@ -6,6 +6,7 @@ export const PRODUCTS_DIR = path.join(ROOT, "products");
 export const DATA_DIR = path.join(ROOT, "data");
 export const CONFIG_DIR = path.join(ROOT, "config");
 export const SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-image", "SKILL.md");
+export const FACTS_ASSIST_SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-facts", "SKILL.md");
 export const CODEX_BIN = process.env.CODEX_BIN ?? "codex";
 export const CODEX_HOME = process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
 

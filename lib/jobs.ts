@@ -7,6 +7,9 @@ import { runCodex } from "./engine/codex";
 import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
 import { buildPrompt, jobInputIds, normalizeParams, type Aspect, type JobParams } from "./prompts";
 import { getImage, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
+import { createListingJob, executeListingJob } from "./listing";
+import { getCodexSettings } from "./settings";
+import { createFactsAssistJob, executeFactsAssistJob } from "./facts-assistant";
 
 const CONCURRENCY = Math.max(1, Number(process.env.STUDIO_CONCURRENCY ?? 1));
 const MAX_BATCH = 12;
@@ -37,7 +40,24 @@ function validate(product: string, p: JobParams) {
   const ids = jobInputIds(p);
   if (!ids.length) throw new HttpError(400, "Selecione ao menos uma imagem do produto");
   if (p.type === "scene" && !p.productImageIds.length) throw new HttpError(400, "Selecione ao menos uma foto do produto");
-  for (const id of ids) if (getImage(id).product !== product) throw new HttpError(400, `Imagem ${id} é de outro produto`);
+  for (const id of ids) {
+    const image = getImage(id);
+    if (image.product !== product) throw new HttpError(400, `Imagem ${id} é de outro produto`);
+    if (p.type === "correct") {
+      if (id === p.sourceImageId) {
+        if (image.kind !== "generated") throw new HttpError(400, "A versão a corrigir precisa ser uma imagem gerada");
+      } else if (!(["real", "style", "approved", "generated"] as string[]).includes(image.kind) || (image.kind === "generated" && image.status === "rejected")) {
+        throw new HttpError(400, "Referência inválida para a correção");
+      }
+      continue;
+    }
+    if (p.type === "scene" && id === p.sceneImageId) {
+      if (image.kind !== "style") throw new HttpError(400, "A imagem de cenário precisa ser uma referência de cenário");
+      continue;
+    }
+    const usableReference = image.kind === "real" || image.kind === "approved" || (image.kind === "generated" && image.status !== "rejected");
+    if (!usableReference) throw new HttpError(400, "Escolha uma foto do produto ou uma imagem gerada que não tenha sido descartada");
+  }
 }
 
 export function createJobs(product: string, req: JobRequest): string[] {
@@ -47,6 +67,7 @@ export function createJobs(product: string, req: JobRequest): string[] {
 function enqueue(product: string, jobs: JobParams[]): string[] {
   requireProduct(product);
   const skill = generationSkill();
+  const settings = getCodexSettings();
   const ids: string[] = [];
   for (const job of jobs) {
     const params = withFilamentRefs(job);
@@ -55,9 +76,9 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
     db()
       .prepare(
-        `INSERT INTO jobs (id, product, type, label, params, prompt, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)`,
+        `INSERT INTO jobs (id, product, type, label, params, prompt, status, created_at, model, title) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?)`,
       )
-      .run(id, product, params.type, label, JSON.stringify(params), prompt, now());
+      .run(id, product, params.type, label, JSON.stringify(params), prompt, now(), settings.model, `${readMeta(product).name} · ${label}`);
     ids.push(id);
   }
   tick();
@@ -97,10 +118,34 @@ export function cancelJob(id: string) {
   else if (job.status === "running") state.running.get(id)?.abort();
 }
 
+/** Hides a terminal failed/canceled job from the seller without deleting its diagnostic log. */
+export function dismissJob(id: string) {
+  const job = getJob(id);
+  if (job.status !== "failed" && job.status !== "canceled") throw new HttpError(400, "Só é possível descartar jobs com falha ou cancelados");
+  db().prepare("UPDATE jobs SET status = 'dismissed', finished_at = ? WHERE id = ?").run(now(), id);
+}
+
 /** Re-runs a job with the same parameters (a new job, so the old candidate stays for comparison). */
 export function retryJob(id: string): string[] {
   const job = getJob(id);
+  if (job.type === "listing") return [createListingJob(job.product)];
+  if (job.type === "facts-assist") {
+    const params = JSON.parse(job.params) as { sellerPrompt?: string; imageIds?: number[] };
+    return [createFactsAssistJob(job.product, params.sellerPrompt ?? "", params.imageIds).jobId];
+  }
   return enqueue(job.product, [normalizeParams(JSON.parse(job.params))]);
+}
+
+/** Creates a corrected revision while retaining product and scenario inputs from the original job. */
+export function correctImage(imageId: number, correction: string): string[] {
+  const image = getImage(imageId);
+  if (image.kind !== "generated" || !image.job_id) throw new HttpError(400, "Escolha uma imagem gerada para corrigir");
+  const original = getJob(image.job_id);
+  if (original.type === "listing") throw new HttpError(400, "Este resultado não é uma imagem");
+  const previous = normalizeParams(JSON.parse(original.params));
+  const references = jobInputIds(previous).filter((id) => id !== imageId);
+  const aspect = "aspect" in previous ? previous.aspect : "1:1";
+  return enqueue(image.product, [{ type: "correct", sourceImageId: imageId, referenceImageIds: references, correction: correction.trim(), aspect }]);
 }
 
 /** Queues an AI reframe of an approved image to a new aspect. */
@@ -116,6 +161,18 @@ async function execute(job: JobRow, ctrl: AbortController) {
   const d = db();
   d.prepare("UPDATE jobs SET status = 'running', started_at = ?, error = NULL WHERE id = ?").run(now(), job.id);
   try {
+    if (job.type === "facts-assist") {
+      await executeFactsAssistJob(job, ctrl.signal, (line) => appendLog(job.id, line), (threadId) => d.prepare("UPDATE jobs SET thread_id = ? WHERE id = ?").run(threadId, job.id));
+      d.prepare("UPDATE jobs SET status = 'done', finished_at = ? WHERE id = ?").run(now(), job.id);
+      appendLog(job.id, "sugestões da ficha salvas para revisão");
+      return;
+    }
+    if (job.type === "listing") {
+      await executeListingJob(job, ctrl, (line) => appendLog(job.id, line), (threadId) => d.prepare("UPDATE jobs SET thread_id = ? WHERE id = ?").run(threadId, job.id));
+      d.prepare("UPDATE jobs SET status = 'done', finished_at = ? WHERE id = ?").run(now(), job.id);
+      appendLog(job.id, "anúncio salvo como nova versão");
+      return;
+    }
     const params = normalizeParams(JSON.parse(job.params));
     const inputs = jobInputPaths(params);
     appendLog(job.id, `iniciando codex com ${inputs.length} imagem(ns) de entrada`);
@@ -124,6 +181,8 @@ async function execute(job: JobRow, ctrl: AbortController) {
       workdir,
       prompt: job.prompt,
       images: inputs,
+      model: job.model ?? getCodexSettings().model,
+      title: job.title ?? `${readMeta(job.product).name} · ${job.label}`,
       signal: ctrl.signal,
       onLog: (line) => appendLog(job.id, line),
       onThread: (threadId) => d.prepare("UPDATE jobs SET thread_id = ? WHERE id = ?").run(threadId, job.id),
@@ -168,7 +227,12 @@ function tick() {
 
 /** Starts the worker once per process; jobs interrupted by a restart go back to the queue. */
 export function ensureWorker() {
-  if (state.started) return;
+  // Actions that insert a non-image job call this after the insert. Keep the queue moving
+  // even when the worker was already initialized by an earlier request.
+  if (state.started) {
+    tick();
+    return;
+  }
   state.started = true;
   const requeued = db()
     .prepare("UPDATE jobs SET status = 'queued', log = log || ? WHERE status = 'running'")

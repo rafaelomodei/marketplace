@@ -9,6 +9,8 @@ export type ProductMeta = {
   description: string;
   fidelityNotes: string;
   marketplaces: string[];
+  /** Structured seller facts. Kept optional so folders created by older Studio versions remain valid. */
+  facts?: unknown;
 };
 
 export type ProductSummary = {
@@ -18,6 +20,7 @@ export type ProductSummary = {
   cover: string | null;
   counts: Record<ImageKind, number> & { pendingReview: number };
   activeJobs: number;
+  activeImageJobs: number;
 };
 
 export { slugify };
@@ -80,7 +83,10 @@ export function readMeta(slug: string): ProductMeta {
 export function writeMeta(slug: string, patch: Partial<ProductMeta>): ProductMeta {
   const { dir } = requireProduct(slug);
   const meta = { ...readMeta(slug), ...patch };
-  fs.writeFileSync(path.join(dir, "product.json"), JSON.stringify(meta, null, 2) + "\n");
+  const file = path.join(dir, "product.json");
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(meta, null, 2) + "\n");
+  fs.renameSync(tmp, file);
   db().prepare("UPDATE products SET name = ?, updated_at = ? WHERE slug = ?").run(meta.name, now(), slug);
   return meta;
 }
@@ -95,7 +101,7 @@ export function createProduct(name: string, meta: Partial<ProductMeta> = {}, opt
   for (const sub of [SUBDIRS.real, SUBDIRS.style]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
   fs.writeFileSync(
     path.join(dir, "product.json"),
-    JSON.stringify({ name, description: "", fidelityNotes: "", marketplaces: ["shopee"], ...meta }, null, 2) + "\n",
+    JSON.stringify({ name, description: "", fidelityNotes: "", marketplaces: ["shopee"], facts: { schemaVersion: 1, identification: { brand: "Verde Forma" } }, ...meta }, null, 2) + "\n",
   );
   syncProduct(slug);
   return slug;
@@ -183,7 +189,12 @@ export function listProducts(): ProductSummary[] {
         n: number;
       }
     ).n;
-    return { ...p, cover, counts, activeJobs };
+    const activeImageJobs = (
+      d.prepare("SELECT COUNT(*) n FROM jobs WHERE product = ? AND type IN ('white-bg','scene','recolor','reframe','staged','correct') AND status IN ('queued','running')").get(p.slug) as {
+        n: number;
+      }
+    ).n;
+    return { ...p, cover, counts, activeJobs, activeImageJobs };
   });
 }
 

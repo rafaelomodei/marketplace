@@ -15,6 +15,7 @@ const { renderTarget, exportImages, defaultMode } = await import("@/lib/export")
 const { buildPrompt, jobInputIds, normalizeParams } = await import("@/lib/prompts");
 const { expandRequest } = await import("@/lib/jobs");
 const { db } = await import("@/lib/db");
+const listing = await import("@/lib/listing");
 
 const png = (w: number, h: number) =>
   sharp({ create: { width: w, height: h, channels: 3, background: "#e88" } }).png().toBuffer();
@@ -167,6 +168,18 @@ describe("prompts", () => {
     expect(prompt).toContain("Imagens 2–3: REFERÊNCIA DE COR — filamento Azul (PLA Velvet)");
   });
 
+  it("builds a correction prompt with the generated version first and original references after it", () => {
+    const { prompt, label } = buildPrompt(
+      { type: "correct", sourceImageId: 9, referenceImageIds: [1, 2], correction: "centralizar o produto", aspect: "1:1" },
+      { meta, filament, skill },
+    );
+    expect(label).toBe("correcao");
+    expect(jobInputIds({ type: "correct", sourceImageId: 9, referenceImageIds: [1, 2], correction: "centralizar o produto", aspect: "1:1" })).toEqual([9, 1, 2]);
+    expect(prompt).toContain("Imagem 1: VERSÃO A CORRIGIR");
+    expect(prompt).toContain("Imagens 2–3: REFERÊNCIAS ORIGINAIS");
+    expect(prompt).toContain("CORREÇÃO SOLICITADA: centralizar o produto");
+  });
+
   it("expands recolor requests into one job per combination", () => {
     const jobs = expandRequest({
       type: "recolor",
@@ -222,5 +235,54 @@ describe("actions (future MCP tools)", async () => {
     expect(nextStep({ ...base, generated: 2, pendingReview: 2 }).step).toBe("review");
     expect(nextStep({ ...base, generated: 2, approved: 1 }).step).toBe("publish");
     expect(nextStep({ ...base, stage: "ready" }).tone).toBe("done");
+  });
+});
+
+describe("Shopee listing preparation", () => {
+  let slug: string;
+  beforeAll(() => { slug = products.createProduct("Vaso Listing"); });
+
+  it("keeps old products valid and rejects invalid explicit units/duplicate variation SKUs", () => {
+    expect(listing.readFacts(slug).identification.material).toBeUndefined();
+    expect(() => listing.productFactsSchema.parse({ identification: { dimensions: { height: 10, unit: "px" } } })).toThrow();
+    expect(() => listing.productFactsSchema.parse({ variations: [{ id: "a", sku: "X" }, { id: "b", sku: "X" }] })).toThrow();
+  });
+
+  it("keeps manual edits and marks a revision stale after facts change", () => {
+    listing.updateFacts(slug, { identification: { itemType: "vaso", material: "PLA" }, purchase: { included: [{ name: "vaso", quantity: 1 }] }, sale: { priceBRL: "49,90", stock: 1 }, shipping: { grossWeight: { value: "300", unit: "g" }, packageDimensions: { height: 20, unit: "cm" } }, personalization: {}, care: {} });
+    const factsHash = listing.currentFactsHash(slug);
+    const output = listing.listingOutputSchema.parse({ marketplace: "shopee", title: "Vaso", titleAlternatives: [], description: "Descrição confirmada.", suggestedCategory: { name: "Decoração", rationale: "Uso decorativo" }, attributes: {}, faq: [], pending: [] });
+    const file = products.productFile(slug, "listings/shopee.json"); fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ schemaVersion: 1, marketplace: "shopee", revisions: [{ ...output, id: "11111111-1111-4111-8111-111111111111", createdAt: new Date().toISOString(), factsHash, promptVersion: "v1", rulesVersion: "v1", status: "draft", categoryConfirmed: false, manual: {} }] }));
+    listing.updateListing(slug, "11111111-1111-4111-8111-111111111111", { title: "Vaso editado" });
+    expect(listing.listingRevisions(slug)[0].manual.title).toBe("Vaso editado");
+    listing.updateFacts(slug, { ...listing.readFacts(slug), identification: { ...listing.readFacts(slug).identification, material: "PETG" } });
+    expect(listing.listingRequirements(slug).stale).toBe(true);
+  });
+});
+
+describe("Codex structured output", async () => {
+  const { codexOutputSchema, parseCodexOutput } = await import("@/lib/engine/structured");
+  const { factsAssistResultSchema } = await import("@/lib/facts-assistant");
+
+  // OpenAI strict mode: every object lists all its properties as required and closes extra keys.
+  const assertStrict = (node: any): void => {
+    if (Array.isArray(node)) return node.forEach(assertStrict);
+    if (!node || typeof node !== "object") return;
+    if (node.type === "object" || (Array.isArray(node.type) && node.type.includes("object"))) {
+      expect(node.additionalProperties).toBe(false);
+      expect([...node.required].sort()).toEqual(Object.keys(node.properties ?? {}).sort());
+    }
+    Object.values(node).forEach(assertStrict);
+  };
+
+  it("produces schemas Codex accepts for the facts assistant and the listing", () => {
+    assertStrict(codexOutputSchema(factsAssistResultSchema));
+    assertStrict(codexOutputSchema(listing.listingCodexSchema));
+  });
+
+  it("keeps valid suggestions and drops nulls and invalid fields", () => {
+    const answer = { facts: { identification: { itemType: "Vela", colors: null, dimensions: { height: null, width: null, length: null, unit: "mm" } }, sale: { priceBRL: 29.9, stock: -1 }, purchase: null }, questions: [{ field: "sale.stock", question: "" }] };
+    expect(parseCodexOutput(factsAssistResultSchema, JSON.stringify(answer))).toEqual({ facts: { identification: { itemType: "Vela" }, sale: { priceBRL: 29.9 } }, questions: [] });
   });
 });

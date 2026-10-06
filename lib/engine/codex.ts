@@ -11,6 +11,11 @@ export type CodexRun = {
   timeoutMs?: number;
   onLog: (line: string) => void;
   onThread?: (threadId: string) => void;
+  /** JSON Schema accepted by recent Codex CLIs for a structured final response. */
+  outputSchema?: string;
+  model?: string;
+  /** Human-readable task title; Codex CLI currently derives the session name from its first prompt. */
+  title?: string;
 };
 
 const truncate = (s: string, n = 220) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -56,7 +61,7 @@ function newestImage(dir: string, since: number): string | null {
  * Codex is asked to copy its result to ./output.png; if it doesn't, we fall back to the
  * newest file in ~/.codex/generated_images/<thread>/.
  */
-export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId: string | null }> {
+export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId: string | null; lastMessage: string }> {
   fs.mkdirSync(run.workdir, { recursive: true });
   const started = Date.now();
   const args = [
@@ -65,10 +70,12 @@ export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId:
     "-s",
     "workspace-write",
     "--json",
+    ...(run.model ? ["--model", run.model] : []),
     "-C",
     run.workdir,
     "-o",
     path.join(run.workdir, "last-message.txt"),
+    ...(run.outputSchema ? ["--output-schema", run.outputSchema] : []),
     // -i takes a variadic list, so it must come last; the prompt goes through stdin.
     ...(run.images.length ? ["-i", ...run.images] : []),
   ];
@@ -134,10 +141,14 @@ export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId:
       const outputPath =
         (fs.existsSync(direct) && fs.statSync(direct).size > 0 ? direct : null) ??
         (threadId ? newestImage(path.join(CODEX_HOME, "generated_images", threadId), started) : null);
-      if (outputPath) return resolve({ outputPath, threadId });
+      const lastMessage = fs.existsSync(path.join(run.workdir, "last-message.txt")) ? fs.readFileSync(path.join(run.workdir, "last-message.txt"), "utf8") : "";
+      if (outputPath) return resolve({ outputPath, threadId, lastMessage });
+      // With --output-schema Codex returns the final JSON in -o, not an image.
+      if (run.outputSchema && code === 0 && lastMessage.trim()) return resolve({ outputPath: "", threadId, lastMessage });
       reject(new Error(code === 0 ? "O Codex terminou mas nenhuma imagem foi gerada" : `codex saiu com código ${code ?? sig}`));
     });
 
-    child.stdin.end(run.prompt);
+    const prompt = run.title ? `TÍTULO DESTA TAREFA: ${run.title}\nUse este nome curto para identificar a execução.\n\n${run.prompt}` : run.prompt;
+    child.stdin.end(prompt);
   });
 }

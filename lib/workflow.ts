@@ -5,10 +5,12 @@ import type { ProductDetail, ProductSummary } from "./products";
  * Pure functions only: this file is imported by the browser too.
  */
 export const STEPS = [
+  { id: "info", label: "Produto", title: "Informações do produto", description: "Cadastre somente os dados confirmados do item." },
   { id: "photos", label: "Fotos", title: "Fotos do produto", description: "Envie fotos reais do produto já impresso." },
   { id: "create", label: "Criar", title: "Criar imagens", description: "A IA cria as imagens do anúncio a partir das suas fotos." },
   { id: "review", label: "Escolher", title: "Escolher as melhores", description: "Aprove as imagens que ficaram fiéis ao produto." },
   { id: "publish", label: "Publicar", title: "Preparar para o marketplace", description: "Gera os arquivos no tamanho que cada marketplace pede." },
+  { id: "listing", label: "Anúncio", title: "Anúncio Shopee", description: "Gere, revise e exporte os textos para cadastro manual." },
 ] as const;
 export type StepId = (typeof STEPS)[number]["id"];
 
@@ -22,6 +24,8 @@ export type WorkflowState = {
   approved: number;
   exported: number;
   activeJobs: number;
+  /** Image-generation jobs only; absent in older callers of this pure helper. */
+  activeImageJobs?: number;
 };
 
 export type NextStep = {
@@ -43,6 +47,7 @@ export function stateFromSummary(p: ProductSummary): WorkflowState {
     approved: p.counts.approved,
     exported: p.counts.export,
     activeJobs: p.activeJobs,
+    activeImageJobs: p.activeImageJobs,
   };
 }
 
@@ -57,12 +62,17 @@ export function stateFromProduct(p: Pick<ProductDetail, "stage" | "images" | "jo
     approved: count("approved"),
     exported: count("export"),
     activeJobs: p.jobs.filter((j) => j.status === "queued" || j.status === "running").length,
+    activeImageJobs: p.jobs.filter((j) =>
+      ["white-bg", "scene", "recolor", "reframe", "staged", "correct"].includes(j.type),
+    ).filter((j) => j.status === "queued" || j.status === "running").length,
   };
 }
 
 /** Which steps are complete, for the stepper. */
 export function completedSteps(s: WorkflowState): Record<StepId, boolean> {
-  return { photos: s.real > 0, create: s.generated > 0, review: s.approved > 0, publish: s.exported > 0 };
+  // Product facts and listing approval are evaluated server-side; these tabs remain available
+  // so older folders can be completed progressively.
+  return { info: false, photos: s.real > 0, create: s.generated > 0, review: s.approved > 0, publish: s.exported > 0, listing: false };
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -79,10 +89,11 @@ export function nextStep(s: WorkflowState): NextStep {
       cta: "Enviar fotos",
       tone: "action",
     };
-  if (s.activeJobs)
+  const activeImageJobs = s.activeImageJobs ?? s.activeJobs;
+  if (activeImageJobs)
     return {
       step: "review",
-      title: `Criando ${plural(s.activeJobs, "imagem", "imagens")}…`,
+      title: `Criando ${plural(activeImageJobs, "imagem", "imagens")}…`,
       description: "Cada imagem leva de 1 a 3 minutos. Você pode sair desta página; elas aparecem aqui quando ficarem prontas.",
       cta: "Acompanhar",
       tone: "waiting",

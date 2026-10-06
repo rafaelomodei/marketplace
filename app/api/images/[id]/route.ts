@@ -1,5 +1,5 @@
 import { handle } from "@/lib/api";
-import { deleteImageAction, reframeImageAction, reviewImageAction, runAction } from "@/lib/actions";
+import { correctImageAction, deleteImageAction, reframeImageAction, reviewImageAction, runAction } from "@/lib/actions";
 import { HttpError } from "@/lib/products";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -8,8 +8,9 @@ const DECISION = { approve: "approve", reject: "reject", reset: "reset" } as con
 export const POST = (req: Request, { params }: Ctx) =>
   handle(async () => {
     const imageId = Number((await params).id);
-    const { action, aspect } = await req.json();
+    const { action, aspect, correction } = await req.json();
     if (action === "reframe") return runAction(reframeImageAction, { imageId, aspect });
+    if (action === "correct") return runAction(correctImageAction, { imageId, correction });
     const decision = DECISION[action as keyof typeof DECISION];
     if (!decision) throw new HttpError(400, `Ação desconhecida: ${action}`);
     return runAction(reviewImageAction, { imageId, decision });

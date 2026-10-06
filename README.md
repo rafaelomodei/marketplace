@@ -1,5 +1,13 @@
 # Marketplace Studio
 
+## Preparação de anúncio Shopee
+
+Além das imagens, cada produto agora possui uma ficha estruturada em **Produto**, versões do anúncio em **Anúncio Shopee** e os arquivos finais em `exports/shopee/`. Preencha somente fatos confirmados, selecione/exporte imagens e gere um rascunho pelo Codex. Revise título e descrição, confirme a categoria sugerida, trate pendências e aprove a versão. A opção **Marcar como pronto** só funciona quando ficha, anúncio aprovado e atualizado, imagens Shopee exportadas e pendências bloqueantes estiverem resolvidos. O cadastro na Shopee continua manual; não há publicação automática.
+
+O modelo padrão do Codex pode ser escolhido em **Configurações do Codex** na página inicial. A escolha vale para novos jobs; cada job guarda o modelo e o nome `produto · tarefa` usados na fila. O Codex CLI disponível usa o primeiro texto do prompt para identificar automaticamente a sessão e não oferece um argumento próprio `--title`.
+
+Na ficha, **Preencher campos vazios** combina o texto que você informar com fotos reais/aprovadas para sugerir dados. As sugestões não substituem campos preenchidos e ficam para revisão antes de salvar. A marca padrão é Verde Forma; as cores disponíveis são selecionadas com busca no catálogo local de filamentos.
+
 App local para criar as **imagens de anúncio** dos produtos impressos em 3D, para Shopee (e, depois, Mercado Livre).
 
 Você coloca as **fotos reais** do produto e as **referências de estilo/cenário**. O app pede ao **Codex CLI** para gerar as

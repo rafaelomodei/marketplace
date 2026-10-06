@@ -5,3 +5,4 @@ export { MODE_UI } from "./modes";
 export { NextStepCard } from "./NextStepCard";
 export { ProductCard } from "./ProductCard";
 export { ProductStatus } from "./ProductStatus";
+export { CodexSettings } from "./CodexSettings";

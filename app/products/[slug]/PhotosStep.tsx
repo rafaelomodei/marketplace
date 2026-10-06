@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Lightbulb } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Card, Dropzone, Field, Icon, ImageTile, Input, SectionHeader, Spinner, Textarea } from "@/components/ui";
 import { api, fileUrl, reportError } from "@/lib/client/api";
 import type { StepProps } from "./shared";
@@ -25,6 +25,7 @@ const TIPS = ["Luz natural, sem flash", "2 a 4 ângulos diferentes", "Produto in
 
 export function PhotosStep({ product, reload, preview, goTo }: StepProps) {
   const hasPhotos = product.images.some((i) => i.kind === "real");
+  const saveMeta = useRef<() => Promise<void>>(async () => {});
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
       <div className="space-y-14">
@@ -33,14 +34,20 @@ export function PhotosStep({ product, reload, preview, goTo }: StepProps) {
         ))}
         {hasPhotos && (
           <div className="flex justify-end border-t border-line pt-6">
-            <Button variant="primary" onClick={() => goTo("create")}>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                await saveMeta.current();
+                goTo("create");
+              }}
+            >
               Continuar para criar <Icon icon={ArrowRight} />
             </Button>
           </div>
         )}
       </div>
       <aside className="space-y-4">
-        <MetaEditor product={product} reload={reload} />
+        <MetaEditor product={product} reload={reload} onSaveReady={(save) => (saveMeta.current = save)} />
         <Card tone="surface" className="space-y-3 p-5">
           <p className="flex items-center gap-2 text-sm font-medium text-ink-strong">
             <Icon icon={Lightbulb} /> Dicas para boas fotos
@@ -103,17 +110,70 @@ function UploadZone({
   );
 }
 
-function MetaEditor({ product, reload }: Pick<StepProps, "product" | "reload">) {
+function MetaEditor({ product, reload, onSaveReady }: Pick<StepProps, "product" | "reload"> & { onSaveReady: (save: () => Promise<void>) => void }) {
   const [meta, setMeta] = useState(product.meta);
   const [saving, setSaving] = useState(false);
-  const dirty = JSON.stringify(meta) !== JSON.stringify(product.meta);
+  const metaRef = useRef(meta);
+  const savedRef = useRef(JSON.stringify(product.meta));
+  const inFlight = useRef<Promise<void> | null>(null);
+  const mounted = useRef(true);
+  const dirty = JSON.stringify(meta) !== savedRef.current;
+
+  useEffect(() => {
+    metaRef.current = meta;
+  }, [meta]);
+
+  // A reload after a save updates the server baseline without throwing away a newer local edit.
+  useEffect(() => {
+    if (JSON.stringify(metaRef.current) === savedRef.current) {
+      savedRef.current = JSON.stringify(product.meta);
+      setMeta(product.meta);
+    }
+  }, [product.meta]);
 
   async function save() {
-    setSaving(true);
-    await api(`/api/products/${product.slug}`, { method: "PATCH", json: meta }).catch(reportError);
-    await reload();
-    setSaving(false);
+    if (inFlight.current) return inFlight.current;
+    const run = async () => {
+      while (JSON.stringify(metaRef.current) !== savedRef.current) {
+        const snapshot = metaRef.current;
+        if (mounted.current) setSaving(true);
+        try {
+          await api(`/api/products/${product.slug}`, { method: "PATCH", json: snapshot });
+          savedRef.current = JSON.stringify(snapshot);
+          await reload();
+        } catch (error) {
+          reportError(error);
+          return;
+        } finally {
+          if (mounted.current) setSaving(false);
+        }
+      }
+    };
+    inFlight.current = run().finally(() => {
+      inFlight.current = null;
+    });
+    return inFlight.current;
   }
+
+  // Save after a short pause, rather than on every keystroke. The same flush is used by Continue.
+  useEffect(() => {
+    if (!dirty) return;
+    const timer = window.setTimeout(() => void save(), 900);
+    return () => window.clearTimeout(timer);
+  }, [meta, dirty]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    mounted.current = true;
+    onSaveReady(save);
+    const saveBeforeLeaving = () => void save();
+    window.addEventListener("pagehide", saveBeforeLeaving);
+    return () => {
+      mounted.current = false;
+      window.removeEventListener("pagehide", saveBeforeLeaving);
+      // Covers changing step through the top navigation as well as a browser navigation.
+      void save();
+    };
+  }, []); // The function intentionally reads refs, so this is registered once.
 
   return (
     <Card className="space-y-5 p-5">
@@ -133,7 +193,7 @@ function MetaEditor({ product, reload }: Pick<StepProps, "product" | "reload">) 
         <Textarea rows={2} value={meta.description} onChange={(e) => setMeta({ ...meta, description: e.target.value })} />
       </Field>
       <Button variant="primary" disabled={!dirty || saving} onClick={save} className="w-full">
-        {saving && <Spinner />} {dirty ? "Salvar" : "Salvo"}
+        {saving && <Spinner />} {dirty ? "Salvar agora" : "Salvo automaticamente"}
       </Button>
     </Card>
   );
