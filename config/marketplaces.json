@@ -1,6 +1,12 @@
 {
   "shopee": {
     "name": "Shopee",
+    "listingRules": {
+      "source": "https://ads.shopee.com.br/learn/faq/323/1462",
+      "verifiedAt": "2026-10-05",
+      "status": "needs-seller-confirmation",
+      "note": "Limites de título, variações e pré-encomenda não são validados automaticamente; confirme na categoria da sua conta antes de publicar."
+    },
     "targets": [
       { "id": "1x1", "label": "1:1 (1200×1200)", "width": 1200, "height": 1200 },
       { "id": "3x4", "label": "3:4 (1200×1600)", "width": 1200, "height": 1600 }

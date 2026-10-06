@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CONFIG_DIR, ROOT, SKILL_FILE } from "./paths";
+import { CONFIG_DIR, FACTS_ASSIST_SKILL_FILE, ROOT, SKILL_FILE } from "./paths";
 
 /** Reference photo from the store: a printed part, the spool side (pure color) or the spool. */
 export type FilamentImage = { role: "part" | "spool-side" | "spool-part" | "spool"; file: string };
@@ -19,7 +19,7 @@ export type Filament = {
 export type FilamentLine = { id: string; name: string; finish: string; url: string };
 export type FilamentCatalog = { brand: string; note?: string; syncedAt?: string; lines: FilamentLine[]; filaments: Filament[] };
 export type ExportTarget = { id: string; label: string; width: number; height: number };
-export type Marketplace = { name: string; targets: ExportTarget[] };
+export type Marketplace = { name: string; targets: ExportTarget[]; listingRules?: { source: string; verifiedAt: string; status: "needs-seller-confirmation" | "verified"; note: string } };
 
 function readJson<T>(file: string): T {
   return JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, file), "utf8")) as T;
@@ -45,4 +45,9 @@ export function filamentRefFiles(f: Filament): string[] {
 /** The generation rules sent to Codex with every job (frontmatter stripped). Read on each job so edits apply at once. */
 export function generationSkill(): string {
   return fs.readFileSync(SKILL_FILE, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+}
+
+/** Rules used by the structured product-facts assistant. */
+export function factsAssistSkill(): string {
+  return fs.readFileSync(FACTS_ASSIST_SKILL_FILE, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
 }

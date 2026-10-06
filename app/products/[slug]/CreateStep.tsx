@@ -35,7 +35,11 @@ function toggle<T>(list: T[], item: T): T[] {
 export function CreateStep({ product, config, reload, preview, goTo }: StepProps) {
   const real = product.images.filter((i) => i.kind === "real");
   const style = product.images.filter((i) => i.kind === "style");
+  // A candidate can be useful as a visual reference before it is approved. Rejected
+  // candidates are intentionally excluded so an accidental/incorrect generation is not reused.
+  const generated = product.images.filter((i) => i.kind === "generated" && i.status !== "rejected");
   const approved = product.images.filter((i) => i.kind === "approved");
+  const references = [...real, ...generated, ...approved];
   const modes: Mode[] = ["white-bg", "staged", "scene", "recolor"];
 
   const [mode, setMode] = useState<Mode>("white-bg");
@@ -43,7 +47,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
   const [productIds, setProductIds] = useState<number[]>(() => real.map((i) => i.id).slice(0, 3));
   const [sceneId, setSceneId] = useState<number | null>(style[0]?.id ?? null);
   const [replaceTarget, setReplaceTarget] = useState("");
-  const [sourceId, setSourceId] = useState<number | null>(approved[0]?.id ?? real[0]?.id ?? null);
+  const [sourceId, setSourceId] = useState<number | null>(approved[0]?.id ?? generated[0]?.id ?? real[0]?.id ?? null);
   const [colors, setColors] = useState<ColorRow[]>([{ part: "produto inteiro", filamentIds: [] }]);
   const [aspectChoice, setAspect] = useState<Aspect>("ref");
   // "ref" (keep the scene's own ratio) only makes sense when there is a scene. Photos from the 3D are always square.
@@ -109,6 +113,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
           selected={selected.includes(img.id)}
           onSelect={() => onPick(img.id)}
           onZoom={() => preview(img.rel)}
+          caption={img.kind === "real" ? "Foto original" : img.kind === "approved" ? "Imagem aprovada" : img.kind === "generated" ? "Imagem gerada" : undefined}
         />
       ))}
     </div>
@@ -135,8 +140,8 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
         )}
 
         {mode !== "recolor" && (
-          <FormSection title="Fotos do produto" hint="Já marcamos as primeiras. A IA usa todas as marcadas como o mesmo objeto, visto de ângulos diferentes.">
-            {picker(real, productIds, (id) => setProductIds(toggle(productIds, id)))}
+          <FormSection title="Referências do produto" hint="Use fotos reais, imagens geradas ou aprovadas. As primeiras fotos reais já vêm marcadas; selecione uma imagem criada para reutilizá-la em outro cenário ou em uso.">
+            {picker(references, productIds, (id) => setProductIds(toggle(productIds, id)))}
           </FormSection>
         )}
 
@@ -163,8 +168,8 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
 
         {mode === "recolor" && (
           <>
-            <FormSection title="Imagem base" hint="De preferência uma imagem já aprovada. Ela é recriada trocando só as cores.">
-              {picker([...approved, ...real], sourceId ? [sourceId] : [], setSourceId)}
+            <FormSection title="Imagem base" hint="Pode ser uma foto original, uma imagem gerada em revisão ou uma aprovada. Ela é recriada trocando só as cores.">
+              {picker(references, sourceId ? [sourceId] : [], setSourceId)}
             </FormSection>
             <FormSection
               title={`Cores (${config.filaments.brand})`}

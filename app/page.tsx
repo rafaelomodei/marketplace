@@ -3,7 +3,7 @@
 import { ArrowRight, Camera, Download, MousePointerClick, PackageOpen, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ProductCard } from "@/components/studio";
+import { CodexSettings, ProductCard } from "@/components/studio";
 import {
   Alert,
   Badge,
@@ -25,7 +25,13 @@ import type { ProductSummary } from "@/lib/products";
 import { STEPS } from "@/lib/workflow";
 
 const STEP_ICONS = [Camera, Wand2, MousePointerClick, Download];
-const HOW_IT_WORKS: Feature[] = STEPS.map((s, i) => ({ icon: STEP_ICONS[i], title: `${i + 1}. ${s.title}`, description: s.description }));
+// The homepage remains the four-step image journey; product facts and listing review
+// are available inside a product and should not be rendered here without an icon.
+const HOW_IT_WORKS: Feature[] = STEPS.filter((s) => ["photos", "create", "review", "publish"].includes(s.id)).map((s, i) => ({
+  icon: STEP_ICONS[i],
+  title: `${i + 1}. ${s.title}`,
+  description: s.description,
+}));
 
 export default function Home() {
   const router = useRouter();
@@ -100,6 +106,7 @@ export default function Home() {
       <Container id="como-funciona" className="scroll-mt-16 py-16">
         <SectionHeader eyebrow="Como funciona" title="Quatro passos, nenhum conhecimento técnico" className="mb-10" />
         <FeatureGrid features={HOW_IT_WORKS} />
+        <div className="mt-10"><CodexSettings /></div>
       </Container>
 
       <Container id="produtos" className="scroll-mt-16 space-y-16 py-16">

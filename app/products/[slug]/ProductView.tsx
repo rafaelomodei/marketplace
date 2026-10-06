@@ -12,6 +12,8 @@ import { CreateStep } from "./CreateStep";
 import { PhotosStep } from "./PhotosStep";
 import { PublishStep } from "./PublishStep";
 import { ReviewStep } from "./ReviewStep";
+import { InfoStep } from "./InfoStep";
+import { ListingStep } from "./ListingStep";
 import type { StepProps, StudioConfig } from "./shared";
 
 export default function ProductView({ slug }: { slug: string }) {
@@ -63,6 +65,7 @@ export default function ProductView({ slug }: { slug: string }) {
 
   const next = nextStep(state);
   const done = completedSteps(state);
+  const isAnalyzingProduct = product.jobs.some((job) => job.type === "facts-assist" && (job.status === "queued" || job.status === "running"));
   const move = async (stage: "create" | "ready") => {
     await api(`/api/products/${slug}/move`, { method: "POST", json: { stage } }).catch(reportError);
     await reload();
@@ -95,7 +98,7 @@ export default function ProductView({ slug }: { slug: string }) {
               </Code>
             </div>
             {product.stage === "create" ? (
-              <Button variant="secondary" disabled={!state.approved} onClick={() => move("ready")} title="Move a pasta para products/ready">
+              <Button variant="secondary" onClick={() => move("ready")} title="Valida ficha, anúncio e imagens antes de mover a pasta">
                 <Icon icon={CircleCheck} /> Marcar como pronto
               </Button>
             ) : (
@@ -117,7 +120,9 @@ export default function ProductView({ slug }: { slug: string }) {
             label: s.label,
             done: done[s.id],
             badge:
-              s.id === "review" && state.activeJobs ? (
+              s.id === "info" && isAnalyzingProduct ? (
+                <Spinner className="size-3 text-warning" />
+              ) : s.id === "review" && state.activeImageJobs ? (
                 <Spinner className="size-3 text-warning" />
               ) : s.id === "review" && state.pendingReview ? (
                 <Badge tone="warning">{state.pendingReview}</Badge>
@@ -126,10 +131,12 @@ export default function ProductView({ slug }: { slug: string }) {
         />
         <ErrorBanner />
         <div key={step} className="animate-fade-up">
+          {step === "info" && <InfoStep {...props} />}
           {step === "photos" && <PhotosStep {...props} />}
           {step === "create" && <CreateStep {...props} />}
           {step === "review" && <ReviewStep {...props} />}
           {step === "publish" && <PublishStep {...props} />}
+          {step === "listing" && <ListingStep {...props} />}
         </div>
       </Container>
 

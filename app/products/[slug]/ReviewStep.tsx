@@ -1,15 +1,16 @@
 "use client";
 
-import { ArrowRight, Check, RotateCcw, Sparkles, ThumbsDown, Undo2 } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, Sparkles, ThumbsDown, Undo2, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { JobCard, MODE_UI } from "@/components/studio";
-import { Badge, Button, ChoiceGroup, Disclosure, EmptyState, Icon, ImageTile, SectionHeader } from "@/components/ui";
+import { Badge, Button, ChoiceGroup, Disclosure, EmptyState, Field, Icon, ImageTile, SectionHeader, Textarea } from "@/components/ui";
 import { api, fileUrl, reportError } from "@/lib/client/api";
 import type { ImageRow, JobRow } from "@/lib/db";
 import { jobInputIds, normalizeParams, type JobType } from "@/lib/prompts";
 import type { StepProps } from "./shared";
 
 type Filter = "pending" | "approved" | "rejected" | "all";
+const IMAGE_JOB_TYPES = new Set(["white-bg", "scene", "recolor", "reframe", "staged", "correct"]);
 
 export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
   const [filter, setFilter] = useState<Filter>("pending");
@@ -17,8 +18,9 @@ export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
   const jobsById = new Map(product.jobs.map((j) => [j.id, j]));
   const imagesById = new Map(product.images.map((i) => [i.id, i]));
 
-  const active = product.jobs.filter((j) => j.status === "queued" || j.status === "running").reverse();
-  const failed = product.jobs.filter((j) => j.status === "failed").slice(0, 5);
+  const imageJobs = product.jobs.filter((j) => IMAGE_JOB_TYPES.has(j.type));
+  const active = imageJobs.filter((j) => j.status === "queued" || j.status === "running").reverse();
+  const failed = imageJobs.filter((j) => j.status === "failed").slice(0, 5);
   const generated = product.images.filter((i) => i.kind === "generated");
   const count = (s: ImageRow["status"]) => generated.filter((i) => i.status === s).length;
   const candidates = generated.filter((i) => filter === "all" || i.status === filter);
@@ -40,7 +42,12 @@ export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
               <JobCard key={job.id} job={job} onCancel={() => act(job.id, `/api/jobs/${job.id}`, { action: "cancel" })} />
             ))}
             {failed.map((job) => (
-              <JobCard key={job.id} job={job} onRetry={() => act(job.id, `/api/jobs/${job.id}`, { action: "retry" })} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onRetry={() => act(job.id, `/api/jobs/${job.id}`, { action: "retry" })}
+                onDismiss={() => act(job.id, `/api/jobs/${job.id}`, { action: "dismiss" })}
+              />
             ))}
           </div>
         </section>
@@ -98,6 +105,7 @@ export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
                 preview={preview}
                 onReview={(action) => act(img.id, `/api/images/${img.id}`, { action })}
                 onRetry={job ? () => act(job.id, `/api/jobs/${job.id}`, { action: "retry" }) : undefined}
+                onCorrect={(correction) => act(img.id, `/api/images/${img.id}`, { action: "correct", correction })}
               />
             );
           })}
@@ -116,6 +124,7 @@ function Candidate({
   preview,
   onReview,
   onRetry,
+  onCorrect,
 }: {
   img: ImageRow;
   job?: JobRow;
@@ -125,8 +134,11 @@ function Candidate({
   preview: (rel: string) => void;
   onReview: (action: "approve" | "reject" | "reset") => void;
   onRetry?: () => void;
+  onCorrect: (correction: string) => void;
 }) {
   const mode = job ? MODE_UI[job.type as JobType] : undefined;
+  const [correcting, setCorrecting] = useState(false);
+  const [correction, setCorrection] = useState("");
   return (
     <article className="space-y-4">
       <ImageTile src={fileUrl(slug, img.rel, 800)} onZoom={() => preview(img.rel)} />
@@ -159,7 +171,23 @@ function Candidate({
             <Icon icon={RotateCcw} /> Outra versão
           </Button>
         )}
+        <Button variant="ghost" disabled={busy} onClick={() => setCorrecting(!correcting)} title="Cria uma nova versão a partir desta imagem e das referências originais">
+          <Icon icon={Wand2} /> Corrigir esta versão
+        </Button>
       </div>
+      {correcting && (
+        <div className="space-y-3 rounded-card border border-line bg-surface p-4">
+          <Field label="O que deve mudar?" hint="A nova versão preserva o cenário e o produto desta imagem; descreva somente a correção desejada.">
+            <Textarea rows={3} value={correction} onChange={(e) => setCorrection(e.target.value)} placeholder="Ex.: centralizar melhor o produto no prato e reduzir a sombra" />
+          </Field>
+          <div className="flex gap-2">
+            <Button variant="primary" size="sm" disabled={busy || correction.trim().length < 3} onClick={() => onCorrect(correction)}>
+              <Icon icon={Wand2} /> Gerar versão corrigida
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setCorrecting(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
       {job && (
         <Disclosure summary="Detalhes">
           <div className="space-y-3">

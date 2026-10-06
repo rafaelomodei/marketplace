@@ -1,7 +1,7 @@
 import { Badge, type BadgeTone } from "@/components/ui";
 import type { NextStep } from "@/lib/workflow";
 
-const SHORT: Record<NextStep["step"], string> = { photos: "Faltam fotos", create: "Criar imagens", review: "Para escolher", publish: "Exportar" };
+const SHORT: Record<NextStep["step"], string> = { info: "Informações", photos: "Faltam fotos", create: "Criar imagens", review: "Para escolher", publish: "Exportar", listing: "Anúncio" };
 
 /** One short tag saying where the product is in the flow. */
 export function ProductStatus({ next }: { next: NextStep }) {

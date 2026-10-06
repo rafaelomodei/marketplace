@@ -24,6 +24,7 @@ export type JobParams =
       extra?: string;
     }
   | { type: "reframe"; sourceImageId: number; aspect: Aspect; extra?: string }
+  | { type: "correct"; sourceImageId: number; referenceImageIds: number[]; correction: string; aspect: Aspect; extra?: string }
   | {
       /** The product in use, in a scene described in words (no scene photo needed). */
       type: "staged";
@@ -40,6 +41,7 @@ export const JOB_TYPE_LABEL: Record<JobType, string> = {
   scene: "Cenário",
   recolor: "Variação de cor",
   reframe: "Reenquadrar",
+  correct: "Correção",
   staged: "Em uso",
 };
 
@@ -64,6 +66,8 @@ export function jobInputIds(p: JobParams): number[] {
     case "recolor":
     case "reframe":
       return [p.sourceImageId];
+    case "correct":
+      return [p.sourceImageId, ...p.referenceImageIds.filter((id) => id !== p.sourceImageId)];
     case "staged":
       return p.productImageIds;
   }
@@ -144,6 +148,16 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       aspect = p.aspect;
       images.push("Imagem 1: BASE — manter idêntica, só estender o quadro.");
       task.push("Mudar o formato estendendo o cenário para as bordas novas (seção 4, Reenquadrar).");
+      break;
+    case "correct":
+      label = "correcao";
+      aspect = p.aspect;
+      images.push("Imagem 1: VERSÃO A CORRIGIR — manter a composição, o cenário e tudo que já está correto.");
+      if (p.referenceImageIds.length)
+        images.push(`${imageRange(2, p.referenceImageIds.length)}: REFERÊNCIAS ORIGINAIS — produto e, quando houver, cenário usados na criação anterior.`);
+      task.push("Criar uma nova versão da Imagem 1, aplicando somente a correção solicitada abaixo.");
+      task.push(`CORREÇÃO SOLICITADA: ${p.correction.trim()}`);
+      task.push("As referências originais têm prioridade para fidelidade do produto; não introduza alterações além da correção.");
       break;
     case "staged":
       label = "em-uso";

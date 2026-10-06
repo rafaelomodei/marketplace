@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { filamentCatalog, marketplaces } from "../config";
 import { exportImages } from "../export";
-import { cancelJob, createJobs, getJob, reframe, retryJob } from "../jobs";
+import { cancelJob, correctImage, createJobs, dismissJob, getJob, reframe, retryJob } from "../jobs";
 import { approveImage, setCandidateStatus } from "../products";
 import { defineAction } from "./define";
 import { imageId, slug } from "./products";
+import { CODEX_MODELS, codexSettingsSchema, getCodexSettings, setCodexSettings } from "../settings";
 
 const aspect = z.enum(["1:1", "3:4", "ref"]).describe("1:1 quadrada, 3:4 retrato, ref = mesma proporção do cenário");
 const ids = z.array(imageId).min(1);
@@ -47,10 +48,18 @@ export const jobRequest = z.discriminatedUnion("type", [
 export const getCatalogAction = defineAction({
   name: "get_catalog",
   title: "Catálogo",
-  description: "Filamentos disponíveis para variação de cor (id, cor, linha, acabamento) e os formatos de exportação de cada marketplace.",
+  description: "Filamentos disponíveis para variação de cor, formatos por marketplace e modelo Codex configurado no Studio.",
   input: z.object({}),
   readOnly: true,
-  run: () => ({ filaments: filamentCatalog(), marketplaces: marketplaces() }),
+  run: () => ({ filaments: filamentCatalog(), marketplaces: marketplaces(), codex: { ...getCodexSettings(), models: CODEX_MODELS } }),
+});
+
+export const updateCodexSettingsAction = defineAction({
+  name: "update_codex_settings",
+  title: "Configurar o Codex",
+  description: "Define o modelo padrão para novas gerações de imagem e texto.",
+  input: codexSettingsSchema,
+  run: (settings) => setCodexSettings(settings),
 });
 
 export const generateImagesAction = defineAction({
@@ -80,6 +89,14 @@ export const cancelJobAction = defineAction({
   run: ({ jobId }) => cancelJob(jobId),
 });
 
+export const dismissJobAction = defineAction({
+  name: "dismiss_job",
+  title: "Descartar job com falha",
+  description: "Oculta um job que falhou ou foi cancelado, preservando o log para diagnóstico e sem apagar imagens existentes.",
+  input: z.object({ jobId: z.string().min(1) }),
+  run: ({ jobId }) => dismissJob(jobId),
+});
+
 export const retryJobAction = defineAction({
   name: "retry_job",
   title: "Gerar de novo",
@@ -103,6 +120,14 @@ export const reframeImageAction = defineAction({
   description: "Estende o cenário de uma imagem aprovada para outra proporção em vez de cortar. Gera uma nova candidata.",
   input: z.object({ imageId, aspect: aspect.exclude(["ref"]) }),
   run: ({ imageId, aspect }) => ({ jobIds: reframe(imageId, aspect) }),
+});
+
+export const correctImageAction = defineAction({
+  name: "correct_image",
+  title: "Corrigir versão de imagem",
+  description: "Cria uma nova versão de uma imagem gerada com a correção solicitada e as referências originais do job.",
+  input: z.object({ imageId, correction: z.string().trim().min(3).max(2000) }),
+  run: ({ imageId, correction }) => ({ jobIds: correctImage(imageId, correction) }),
 });
 
 export const exportImagesAction = defineAction({

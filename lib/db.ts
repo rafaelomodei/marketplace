@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   error TEXT,
   thread_id TEXT,
   output_image_id INTEGER,
+  model TEXT,
+  title TEXT,
   created_at TEXT NOT NULL,
   started_at TEXT,
   finished_at TEXT
@@ -52,7 +54,7 @@ export type ImageRow = {
   created_at: string;
 };
 
-export type JobStatus = "queued" | "running" | "done" | "failed" | "canceled";
+export type JobStatus = "queued" | "running" | "done" | "failed" | "canceled" | "dismissed";
 
 export type JobRow = {
   id: string;
@@ -66,6 +68,8 @@ export type JobRow = {
   error: string | null;
   thread_id: string | null;
   output_image_id: number | null;
+  model: string | null;
+  title: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -85,6 +89,8 @@ export function db(): Database.Database {
     const d = new Database(path.join(DATA_DIR, "app.db"));
     d.pragma("journal_mode = WAL");
     d.exec(SCHEMA);
+    addColumn(d, "jobs", "model", "TEXT");
+    addColumn(d, "jobs", "title", "TEXT");
     g.__studioDb = d;
   }
   return g.__studioDb;
