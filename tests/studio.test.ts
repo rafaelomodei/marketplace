@@ -286,3 +286,15 @@ describe("Codex structured output", async () => {
     expect(parseCodexOutput(factsAssistResultSchema, JSON.stringify(answer))).toEqual({ facts: { identification: { itemType: "Vela" }, sale: { priceBRL: 29.9 } }, questions: [] });
   });
 });
+
+describe("partial product facts", async () => {
+  const { callAction } = await import("@/lib/actions");
+  it("saves an incomplete ficha, treating empty inputs as missing", async () => {
+    const slug = products.createProduct("Ficha Parcial");
+    const saved = await callAction("update_product_facts", { slug, facts: { identification: { itemType: "Vela", material: "", finish: "  " }, care: { purpose: "" }, sale: { priceBRL: "29,90" } } }) as any;
+    expect(saved.identification).toMatchObject({ itemType: "Vela", brand: "Verde Forma" });
+    expect(saved.identification.material).toBeUndefined();
+    expect(saved.sale.priceBRL).toBe(29.9);
+    expect(listing.listingRequirements(slug).missing).toContain("material confirmado");
+  });
+});

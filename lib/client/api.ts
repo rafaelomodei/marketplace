@@ -17,5 +17,9 @@ export const fileUrl = (slug: string, rel: string, w?: number) =>
 /** Reports an error to <ErrorBanner /> (anywhere on the page). */
 export function reportError(e: unknown) {
   console.error(e);
-  window.dispatchEvent(new CustomEvent("studio:error", { detail: (e as Error).message }));
+  // Bugs in our own code (TypeError and friends) mean nothing to the seller; the console keeps the detail.
+  const internal = e instanceof TypeError || e instanceof ReferenceError || e instanceof RangeError;
+  const offline = e instanceof TypeError && /fetch|network/i.test(e.message);
+  const message = offline ? "Não foi possível falar com o Studio. Verifique se ele está rodando e tente de novo." : internal ? "Algo deu errado nesta tela. Tente de novo; se continuar, recarregue a página." : (e as Error).message;
+  window.dispatchEvent(new CustomEvent("studio:error", { detail: message }));
 }
