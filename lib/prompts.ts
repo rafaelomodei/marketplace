@@ -2,6 +2,8 @@ import type { Filament } from "./config";
 import type { ProductMeta } from "./products";
 
 export type Aspect = "1:1" | "3:4" | "ref";
+export type SocialPlatform = "instagram" | "tiktok" | "facebook";
+export type SocialFormat = "feed-portrait" | "feed-square" | "vertical";
 export type ColorMapping = { part: string; filamentId: string };
 
 export type JobParams =
@@ -32,6 +34,17 @@ export type JobParams =
       setting: string;
       aspect: Aspect;
       extra?: string;
+    }
+  | {
+      type: "social";
+      productImageIds: number[];
+      platform: SocialPlatform;
+      format: SocialFormat;
+      objective: string;
+      headline?: string;
+      supportingText?: string;
+      cta?: string;
+      extra?: string;
     };
 
 export type JobType = JobParams["type"];
@@ -43,6 +56,7 @@ export const JOB_TYPE_LABEL: Record<JobType, string> = {
   reframe: "Reenquadrar",
   correct: "Correção",
   staged: "Em uso",
+  social: "Redes sociais",
 };
 
 /** Upgrades params stored by older versions (scene used to take a list of style refs). */
@@ -69,6 +83,7 @@ export function jobInputIds(p: JobParams): number[] {
     case "correct":
       return [p.sourceImageId, ...p.referenceImageIds.filter((id) => id !== p.sourceImageId)];
     case "staged":
+    case "social":
       return p.productImageIds;
   }
 }
@@ -76,7 +91,7 @@ export function jobInputIds(p: JobParams): number[] {
 const ASPECT_TEXT: Record<Aspect, string> = {
   "1:1": "`1:1` (tela quadrada)",
   "3:4": "`3:4` (tela retrato, com margem livre em cima e embaixo)",
-  ref: "`ref` (mesma proporção da imagem de cenário)",
+  ref: "`ref` (mesma proporção da imagem base ou de cenário)",
 };
 
 function imageRange(from: number, count: number): string {
@@ -95,6 +110,10 @@ export type PromptContext = {
   filament: (id: string) => Filament | undefined;
   /** Body of skills/marketplace-product-image/SKILL.md — the rules every job follows. */
   skill: string;
+  /** Number of canonical Verde Forma visual references attached after product images. */
+  socialReferenceCount?: number;
+  /** First social input is an approved/generated composition that must be edited in place. */
+  socialBaseTarget?: boolean;
 };
 
 /** The skill holds the rules; this builds the short job sheet that goes after it. */
@@ -166,6 +185,39 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       task.push("Criar uma foto realista do produto em uso, na cena descrita abaixo (seção 4, Em uso).");
       task.push(`CENA: ${p.setting.trim()}`);
       break;
+    case "social": { 
+      label = `social-${p.platform}-${p.format}`;
+      if (ctx.socialBaseTarget) {
+        images.push("Imagem 1: BASE DE EDIÇÃO E PRODUTO IMUTÁVEL — partir desta imagem; preservar integralmente o produto e tudo que já estiver correto.");
+        if (p.productImageIds.length > 1)
+          images.push(`${imageRange(2, p.productImageIds.length - 1)}: REFERÊNCIAS ORIGINAIS DO MESMO PRODUTO — usar para conferir geometria, cores, peças e acabamento; não copiar fundo.`);
+      } else {
+        images.push(`${imageRange(1, p.productImageIds.length)}: PRODUTO — referências reais prioritárias; preservar forma, cores, inscrições e acabamento.`);
+      }
+      if (ctx.socialReferenceCount)
+        images.push(
+          `${imageRange(p.productImageIds.length + 1, ctx.socialReferenceCount)}: REFERÊNCIA VISUAL OBRIGATÓRIA DA MARCA — copiar o sistema visual (paleta, tipografia, proporções, respiro, hierarquia e linguagem fotográfica); ignorar os produtos, textos e logos presentes nessa referência.`,
+        );
+      const platform = { instagram: "Instagram", tiktok: "TikTok", facebook: "Facebook" }[p.platform];
+      const format = {
+        "feed-portrait": "feed retrato 4:5 (1080 × 1350 px)",
+        "feed-square": "feed quadrado 1:1 (1080 × 1080 px)",
+        vertical: "vertical 9:16 para Stories/Reels/TikTok (1080 × 1920 px)",
+      }[p.format];
+      task.push(`Criar uma peça estática para ${platform}, no formato ${format}, seguindo integralmente o guia específico de redes sociais acima.`);
+      task.push("A referência visual da marca anexada é um ALVO DE DIREÇÃO DE ARTE, não apenas inspiração. A saída deve parecer uma nova publicação do mesmo perfil.");
+      task.push("Antes de gerar, elaborar internamente um plano estruturado com: variante A–E, caixas normalizadas de produto/título/apoio/CTA, margem segura, paleta da interface e ornamentos. Só então gerar a cena e aplicar a composição gráfica.");
+      task.push("Executar na ordem: (1) planejar caixas sem colisão; (2) produzir a cena preservando o produto e deixando as áreas reservadas vazias; (3) aplicar texto e CTA como camada gráfica; (4) pontuar o QA. Rejeitar a própria saída se houver bloqueio ou nota menor que 14/16.");
+      if (ctx.socialBaseTarget)
+        task.push("EDITAR A IMAGEM 1, não recriá-la. Tratar a região do produto como máscara bloqueada: não redesenhar, rel iluminar, completar, estilizar ou substituir nenhum pixel essencial do objeto. As imagens seguintes servem para auditoria de fidelidade.");
+      task.push("PROIBIÇÃO ABSOLUTA: não adicionar pavio, chama, faísca, suporte, encaixe, ornamento, peça, cor ou função ao produto por inferência semântica. Uma 'vela' não deve ser acesa nem ganhar pavio se isso não estiver visível nas referências ou explicitamente solicitado.");
+      task.push(`OBJETIVO DA PEÇA: ${p.objective.trim()}`);
+      task.push(`HEADLINE: ${p.headline?.trim() || "não inserir"}.`);
+      task.push(`TEXTO DE APOIO: ${p.supportingText?.trim() || "não inserir"}.`);
+      task.push(`CHAMADA PARA AÇÃO: ${p.cta?.trim() || "não inserir"}.`);
+      task.push("Não criar logo, arroba, preço, condição comercial ou texto que não tenha sido fornecido neste job.");
+      break;
+    }
   }
 
   const sheet = [

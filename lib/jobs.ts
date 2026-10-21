@@ -1,12 +1,12 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { filamentRefFiles, findFilament, generationSkill } from "./config";
+import { filamentRefFiles, findFilament, generationSkill, socialGenerationSkill, socialStyleReferenceFiles } from "./config";
 import { db, now, type JobRow } from "./db";
 import { runCodex } from "./engine/codex";
 import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
 import { buildPrompt, jobInputIds, normalizeParams, type Aspect, type JobParams } from "./prompts";
-import { getImage, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
+import { getImage, getProduct, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
 import { createListingJob, executeListingJob } from "./listing";
 import { getCodexSettings } from "./settings";
 import { createFactsAssistJob, executeFactsAssistJob } from "./facts-assistant";
@@ -37,6 +37,7 @@ export function expandRequest(req: JobRequest): JobParams[] {
 function validate(product: string, p: JobParams) {
   if (p.type === "scene" && !p.sceneImageId) throw new HttpError(400, "Selecione a imagem de cenário");
   if (p.type === "staged" && !p.setting.trim()) throw new HttpError(400, "Descreva a cena");
+  if (p.type === "social" && !p.objective.trim()) throw new HttpError(400, "Descreva o objetivo da publicação");
   const ids = jobInputIds(p);
   if (!ids.length) throw new HttpError(400, "Selecione ao menos uma imagem do produto");
   if (p.type === "scene" && !p.productImageIds.length) throw new HttpError(400, "Selecione ao menos uma foto do produto");
@@ -61,7 +62,14 @@ function validate(product: string, p: JobParams) {
 }
 
 export function createJobs(product: string, req: JobRequest): string[] {
-  return enqueue(product, expandRequest(req));
+  const jobs = expandRequest(req).map((job) => {
+    if (job.type !== "social") return job;
+    // Generated/approved references help composition, but originals remain mandatory
+    // evidence for commercial product fidelity. Keep the seller's chosen image first.
+    const originals = getProduct(product).images.filter((image) => image.kind === "real").map((image) => image.id);
+    return { ...job, productImageIds: [...new Set([...job.productImageIds, ...originals])].slice(0, 6) };
+  });
+  return enqueue(product, jobs);
 }
 
 function enqueue(product: string, jobs: JobParams[]): string[] {
@@ -72,7 +80,19 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   for (const job of jobs) {
     const params = withFilamentRefs(job);
     validate(product, params);
-    const { prompt, label } = buildPrompt(params, { meta: readMeta(product), filament: findFilament, skill });
+    const socialRefs = params.type === "social" ? socialStyleReferenceFiles() : [];
+    if (params.type === "social" && !socialRefs.length)
+      throw new HttpError(500, "A referência visual da Verde Forma não foi encontrada. Configure VERDE_FORMA_SOCIAL_REFERENCE.");
+    const jobSkill = params.type === "social" ? `${skill}\n\n---\n\n${socialGenerationSkill()}` : skill;
+    const socialBaseTarget =
+      params.type === "social" && ["approved", "generated"].includes(getImage(params.productImageIds[0]).kind);
+    const { prompt, label } = buildPrompt(params, {
+      meta: readMeta(product),
+      filament: findFilament,
+      skill: jobSkill,
+      socialReferenceCount: socialRefs.length,
+      socialBaseTarget,
+    });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
     db()
       .prepare(
@@ -102,7 +122,8 @@ function withFilamentRefs(p: JobParams): JobParams {
 function jobInputPaths(p: JobParams): string[] {
   const images = jobInputIds(p).map((id) => imagePath(getImage(id)));
   const refs = p.type === "recolor" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
-  return [...images, ...refs];
+  const socialRefs = p.type === "social" ? socialStyleReferenceFiles() : [];
+  return [...images, ...refs, ...socialRefs];
 }
 
 export function getJob(id: string): JobRow {
@@ -144,7 +165,8 @@ export function correctImage(imageId: number, correction: string): string[] {
   if (original.type === "listing") throw new HttpError(400, "Este resultado não é uma imagem");
   const previous = normalizeParams(JSON.parse(original.params));
   const references = jobInputIds(previous).filter((id) => id !== imageId);
-  const aspect = "aspect" in previous ? previous.aspect : "1:1";
+  // Social pieces have their own 4:5/9:16 formats; corrections must preserve the generated canvas.
+  const aspect = previous.type === "social" ? "ref" : "aspect" in previous ? previous.aspect : "1:1";
   return enqueue(image.product, [{ type: "correct", sourceImageId: imageId, referenceImageIds: references, correction: correction.trim(), aspect }]);
 }
 

@@ -1,6 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CONFIG_DIR, FACTS_ASSIST_SKILL_FILE, ROOT, SKILL_FILE } from "./paths";
+import {
+  CONFIG_DIR,
+  FACTS_ASSIST_SKILL_FILE,
+  ROOT,
+  SKILL_FILE,
+  SOCIAL_DIRECTION_FILE,
+  SOCIAL_REFERENCE_FILE,
+  SOCIAL_SKILL_FILE,
+} from "./paths";
 
 /** Reference photo from the store: a printed part, the spool side (pure color) or the spool. */
 export type FilamentImage = { role: "part" | "spool-side" | "spool-part" | "spool"; file: string };
@@ -45,6 +53,25 @@ export function filamentRefFiles(f: Filament): string[] {
 /** The generation rules sent to Codex with every job (frontmatter stripped). Read on each job so edits apply at once. */
 export function generationSkill(): string {
   return fs.readFileSync(SKILL_FILE, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+}
+
+/** Verde Forma brand and layout rules, loaded only for social-media jobs. */
+export function socialGenerationSkill(): string {
+  const identity = fs.readFileSync(SOCIAL_SKILL_FILE, "utf8").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+  const direction = fs.readFileSync(SOCIAL_DIRECTION_FILE, "utf8").trim();
+  return [
+    "# CAMADA 1 — IDENTIDADE GLOBAL DA VERDE FORMA",
+    identity,
+    "---",
+    "# CAMADA 2 — DIREÇÃO DE ARTE OPERACIONAL (FONTE DE VERDADE PRINCIPAL)",
+    "Esta camada decide como construir a composição. Em divergências estéticas ou de layout, ela prevalece sobre a camada global. Fidelidade ao produto, texto confirmado e assets oficiais continuam invioláveis.",
+    direction,
+  ].join("\n\n");
+}
+
+/** Canonical visual board attached to every social job; text rules alone cannot lock visual identity. */
+export function socialStyleReferenceFiles(): string[] {
+  return fs.existsSync(SOCIAL_REFERENCE_FILE) ? [SOCIAL_REFERENCE_FILE] : [];
 }
 
 /** Rules used by the structured product-facts assistant. */

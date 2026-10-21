@@ -1,4 +1,4 @@
-import { Frame, Palette, Pencil, Sparkles, SunMedium, Theater, type LucideIcon } from "lucide-react";
+import { Frame, Palette, Pencil, Share2, Sparkles, SunMedium, Theater, type LucideIcon } from "lucide-react";
 import type { TileTone } from "@/components/ui";
 import { JOB_TYPE_LABEL, type JobType } from "@/lib/prompts";
 
@@ -39,5 +39,11 @@ export const MODE_UI: Record<JobType, { icon: LucideIcon; tone: TileTone; title:
     tone: "peach",
     title: JOB_TYPE_LABEL.staged,
     description: "Mostra o produto sendo usado numa cena que você descreve — sem precisar de foto de cenário.",
+  },
+  social: {
+    icon: Share2,
+    tone: "rose",
+    title: JOB_TYPE_LABEL.social,
+    description: "Cria uma peça pronta para Instagram, TikTok ou Facebook com a identidade da Verde Forma.",
   },
 };

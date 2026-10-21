@@ -21,12 +21,22 @@ import {
 } from "@/components/ui";
 import { api, fileUrl, reportError } from "@/lib/client/api";
 import type { ImageRow } from "@/lib/db";
-import type { Aspect } from "@/lib/prompts";
+import type { Aspect, SocialFormat, SocialPlatform } from "@/lib/prompts";
 import type { StepProps } from "./shared";
 
-type Mode = "white-bg" | "scene" | "recolor" | "staged";
+type Mode = "white-bg" | "scene" | "recolor" | "staged" | "social";
 type ColorRow = { part: string; filamentIds: string[] };
 const ASPECT_LABEL: Record<Aspect, string> = { ref: "Igual ao cenário", "1:1": "Quadrada 1:1", "3:4": "Retrato 3:4" };
+const SOCIAL_PLATFORM_OPTIONS = [
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "facebook", label: "Facebook" },
+] satisfies { value: SocialPlatform; label: string }[];
+const SOCIAL_FORMAT_OPTIONS = [
+  { value: "feed-portrait", label: "Feed retrato · 4:5" },
+  { value: "feed-square", label: "Feed quadrado · 1:1" },
+  { value: "vertical", label: "Stories, Reels ou TikTok · 9:16" },
+] satisfies { value: SocialFormat; label: string }[];
 
 function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
@@ -40,10 +50,16 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
   const generated = product.images.filter((i) => i.kind === "generated" && i.status !== "rejected");
   const approved = product.images.filter((i) => i.kind === "approved");
   const references = [...real, ...generated, ...approved];
-  const modes: Mode[] = ["white-bg", "staged", "scene", "recolor"];
+  const modes: Mode[] = ["white-bg", "staged", "scene", "recolor", "social"];
 
   const [mode, setMode] = useState<Mode>("white-bg");
   const [setting, setSetting] = useState("");
+  const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("instagram");
+  const [socialFormat, setSocialFormat] = useState<SocialFormat>("feed-portrait");
+  const [socialObjective, setSocialObjective] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [supportingText, setSupportingText] = useState("");
+  const [cta, setCta] = useState("");
   const [productIds, setProductIds] = useState<number[]>(() => real.map((i) => i.id).slice(0, 3));
   const [sceneId, setSceneId] = useState<number | null>(style[0]?.id ?? null);
   const [replaceTarget, setReplaceTarget] = useState("");
@@ -81,6 +97,8 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
         ? productIds.length > 0 && sceneId !== null
         : mode === "staged"
             ? productIds.length > 0 && setting.trim().length > 2
+            : mode === "social"
+              ? productIds.length > 0 && socialObjective.trim().length > 2
             : sourceId !== null && colors.some((c) => c.filamentIds.length);
 
   async function submit() {
@@ -92,6 +110,18 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
           ? { type: mode, sceneImageId: sceneId, productImageIds: productIds, replaceTarget, aspect, extra }
           : mode === "staged"
               ? { type: mode, productImageIds: productIds, setting, aspect, extra }
+              : mode === "social"
+                ? {
+                    type: mode,
+                    productImageIds: productIds,
+                    platform: socialPlatform,
+                    format: socialFormat,
+                    objective: socialObjective,
+                    headline,
+                    supportingText,
+                    cta,
+                    extra,
+                  }
               : { type: mode, productImageIds: productIds, aspect, extra };
     try {
       await api("/api/jobs", { method: "POST", json: { product: product.slug, request } });
@@ -137,6 +167,37 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
               <Textarea rows={2} value={setting} onChange={(e) => setSetting(e.target.value)} placeholder="Ex.: pendurado no zíper de uma mochila escolar" />
             </div>
           </FormSection>
+        )}
+
+        {mode === "social" && (
+          <>
+            <FormSection title="Canal e formato" hint="A referência visual oficial da Verde Forma é aplicada automaticamente, junto das proporções e áreas seguras.">
+              <div className="space-y-5">
+                <Field as="div" label="Rede social">
+                  <ChoiceGroup value={socialPlatform} onChange={setSocialPlatform} options={SOCIAL_PLATFORM_OPTIONS} />
+                </Field>
+                <Field as="div" label="Layout">
+                  <ChoiceGroup value={socialFormat} onChange={setSocialFormat} options={SOCIAL_FORMAT_OPTIONS} />
+                </Field>
+              </div>
+            </FormSection>
+            <FormSection title="Conteúdo da publicação" hint="Escreva somente informações confirmadas. Campos vazios não entram na arte.">
+              <div className="space-y-5">
+                <Field label="Objetivo" hint="O que esta publicação deve comunicar?">
+                  <Textarea rows={2} value={socialObjective} onChange={(e) => setSocialObjective(e.target.value)} placeholder="Ex.: apresentar este vaso como decoração para ambientes acolhedores" />
+                </Field>
+                <Field label="Título na arte" optional hint="Curto e direto — de preferência, 2 a 8 palavras.">
+                  <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Ex.: Design que decora e inspira" />
+                </Field>
+                <Field label="Texto de apoio" optional>
+                  <Textarea rows={2} value={supportingText} onChange={(e) => setSupportingText(e.target.value)} placeholder="Uma frase curta com informação real sobre o produto" />
+                </Field>
+                <Field label="Chamada para ação" optional>
+                  <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="Ex.: Fale com a gente" />
+                </Field>
+              </div>
+            </FormSection>
+          </>
         )}
 
         {mode !== "recolor" && (
@@ -222,7 +283,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
           </p>
           <Disclosure summary="Opções avançadas" className="border-t border-line pt-4">
             <div className="space-y-5">
-              {mode !== "recolor" && (
+              {mode !== "recolor" && mode !== "social" && (
                 <Field as="div" label="Formato" hint="Depois de aprovar, você ainda ajusta para o tamanho de cada marketplace.">
                   <ChoiceGroup value={aspect} onChange={setAspect} options={aspectOptions.map((a) => ({ value: a, label: ASPECT_LABEL[a] }))} />
                 </Field>

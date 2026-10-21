@@ -6,6 +6,12 @@ export const PRODUCTS_DIR = path.join(ROOT, "products");
 export const DATA_DIR = path.join(ROOT, "data");
 export const CONFIG_DIR = path.join(ROOT, "config");
 export const SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-image", "SKILL.md");
+export const SOCIAL_SKILL_FILE = path.join(ROOT, "skills", "verde-forma-social", "SKILL.md");
+export const SOCIAL_DIRECTION_FILE = path.join(ROOT, "skills", "verde-forma-social", "references", "direcao-de-arte.md");
+export const SOCIAL_REFERENCE_FILE = path.resolve(
+  process.env.VERDE_FORMA_SOCIAL_REFERENCE ??
+    path.join(ROOT, "skills", "verde-forma-social", "assets", "referencia-post-vela-2-anos.png"),
+);
 export const FACTS_ASSIST_SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-facts", "SKILL.md");
 export const CODEX_BIN = process.env.CODEX_BIN ?? "codex";
 export const CODEX_HOME = process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");

@@ -180,6 +180,49 @@ describe("prompts", () => {
     expect(prompt).toContain("CORREÇÃO SOLICITADA: centralizar o produto");
   });
 
+  it("builds a social-media brief without inventing missing copy", () => {
+    const params: JobParams = {
+      type: "social",
+      productImageIds: [1, 2],
+      platform: "instagram",
+      format: "feed-portrait",
+      objective: "Apresentar o produto como decoração para casa",
+      headline: "Design que inspira",
+    };
+    const { prompt, label } = buildPrompt(params, {
+      meta,
+      filament,
+      skill: `${skill}\n\n# Identidade Verde Forma`,
+      socialReferenceCount: 1,
+    });
+    expect(jobInputIds(params)).toEqual([1, 2]);
+    expect(label).toBe("social-instagram-feed-portrait");
+    expect(prompt).toContain("Instagram");
+    expect(prompt).toContain("Imagem 3: REFERÊNCIA VISUAL OBRIGATÓRIA DA MARCA");
+    expect(prompt).toContain("deve parecer uma nova publicação do mesmo perfil");
+    expect(prompt).toContain("feed retrato 4:5 (1080 × 1350 px)");
+    expect(prompt).toContain("HEADLINE: Design que inspira.");
+    expect(prompt).toContain("TEXTO DE APOIO: não inserir.");
+    expect(prompt).toContain("Não criar logo, arroba, preço");
+  });
+
+  it("locks an approved social base and forbids semantic product completion", () => {
+    const { prompt } = buildPrompt(
+      {
+        type: "social",
+        productImageIds: [9, 1, 2],
+        platform: "instagram",
+        format: "feed-portrait",
+        objective: "Apresentar a vela",
+      },
+      { meta, filament, skill, socialBaseTarget: true, socialReferenceCount: 1 },
+    );
+    expect(prompt).toContain("Imagem 1: BASE DE EDIÇÃO E PRODUTO IMUTÁVEL");
+    expect(prompt).toContain("Imagens 2–3: REFERÊNCIAS ORIGINAIS DO MESMO PRODUTO");
+    expect(prompt).toContain("EDITAR A IMAGEM 1, não recriá-la");
+    expect(prompt).toContain("não adicionar pavio, chama, faísca");
+  });
+
   it("expands recolor requests into one job per combination", () => {
     const jobs = expandRequest({
       type: "recolor",

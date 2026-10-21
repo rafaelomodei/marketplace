@@ -10,7 +10,7 @@ import { jobInputIds, normalizeParams, type JobType } from "@/lib/prompts";
 import type { StepProps } from "./shared";
 
 type Filter = "pending" | "approved" | "rejected" | "all";
-const IMAGE_JOB_TYPES = new Set(["white-bg", "scene", "recolor", "reframe", "staged", "correct"]);
+const IMAGE_JOB_TYPES = new Set(["white-bg", "scene", "recolor", "reframe", "staged", "social", "correct"]);
 
 export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
   const [filter, setFilter] = useState<Filter>("pending");

@@ -43,6 +43,17 @@ export const jobRequest = z.discriminatedUnion("type", [
     aspect: aspect.default("1:1"),
     extra,
   }),
+  z.object({
+    type: z.literal("social").describe("Peça estática para redes sociais seguindo a identidade da Verde Forma"),
+    productImageIds: ids.describe("Fotos reais ou referências aprovadas do produto"),
+    platform: z.enum(["instagram", "tiktok", "facebook"]),
+    format: z.enum(["feed-portrait", "feed-square", "vertical"]),
+    objective: z.string().trim().min(3).max(500),
+    headline: z.string().trim().max(120).optional(),
+    supportingText: z.string().trim().max(300).optional(),
+    cta: z.string().trim().max(120).optional(),
+    extra,
+  }),
 ]);
 
 export const getCatalogAction = defineAction({

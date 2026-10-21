@@ -190,7 +190,7 @@ export function listProducts(): ProductSummary[] {
       }
     ).n;
     const activeImageJobs = (
-      d.prepare("SELECT COUNT(*) n FROM jobs WHERE product = ? AND type IN ('white-bg','scene','recolor','reframe','staged','correct') AND status IN ('queued','running')").get(p.slug) as {
+      d.prepare("SELECT COUNT(*) n FROM jobs WHERE product = ? AND type IN ('white-bg','scene','recolor','reframe','staged','social','correct') AND status IN ('queued','running')").get(p.slug) as {
         n: number;
       }
     ).n;

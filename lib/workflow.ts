@@ -63,7 +63,7 @@ export function stateFromProduct(p: Pick<ProductDetail, "stage" | "images" | "jo
     exported: count("export"),
     activeJobs: p.jobs.filter((j) => j.status === "queued" || j.status === "running").length,
     activeImageJobs: p.jobs.filter((j) =>
-      ["white-bg", "scene", "recolor", "reframe", "staged", "correct"].includes(j.type),
+      ["white-bg", "scene", "recolor", "reframe", "staged", "social", "correct"].includes(j.type),
     ).filter((j) => j.status === "queued" || j.status === "running").length,
   };
 }
