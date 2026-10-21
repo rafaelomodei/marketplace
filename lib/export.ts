@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
@@ -10,6 +11,35 @@ import { getImage, HttpError, imagePath, registerImage, requireProduct } from ".
  * crop — fill the frame, cropping around the most interesting region (right for scenes).
  */
 export type ExportMode = "pad" | "crop";
+
+/** Opens a product's export directory in the host operating system's file manager. */
+export async function openExportFolder(slug: string, marketplace: string): Promise<{ folder: string }> {
+  if (!marketplaces()[marketplace]) throw new HttpError(400, `Marketplace desconhecido: ${marketplace}`);
+
+  const { dir } = requireProduct(slug);
+  const folder = path.join(dir, SUBDIRS.export, marketplace);
+  fs.mkdirSync(folder, { recursive: true });
+
+  const [command, args] =
+    process.platform === "darwin"
+      ? ["open", [folder]]
+      : process.platform === "win32"
+        ? ["explorer.exe", [folder]]
+        : ["xdg-open", [folder]];
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(command, args, { detached: true, stdio: "ignore" });
+    child.once("spawn", () => {
+      child.unref();
+      resolve();
+    });
+    child.once("error", reject);
+  }).catch(() => {
+    throw new HttpError(500, "Não foi possível abrir a pasta no explorador de arquivos");
+  });
+
+  return { folder: path.posix.join(SUBDIRS.export, marketplace) };
+}
 
 export async function renderTarget(input: string, output: string, width: number, height: number, mode: ExportMode) {
   fs.mkdirSync(path.dirname(output), { recursive: true });

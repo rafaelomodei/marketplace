@@ -17,6 +17,7 @@ const ALL = [
   p.listProductsAction,
   p.getProductAction,
   p.getNextStepAction,
+  p.openExportFolderAction,
   p.createProductAction,
   p.updateProductAction,
   p.moveProductAction,

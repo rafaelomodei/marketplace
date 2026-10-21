@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Frame, MousePointerClick, Undo2 } from "lucide-react";
+import { Download, FolderOpen, Frame, MousePointerClick, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { Alert, Badge, Button, Card, ChoiceGroup, Code, Disclosure, EmptyState, Field, Icon, ImageTile, SectionHeader, Spinner } from "@/components/ui";
 import { api, fileUrl, reportError } from "@/lib/client/api";
@@ -138,7 +138,19 @@ export function PublishStep({ product, config, reload, preview, goTo }: StepProp
           </Button>
           {done !== null && (
             <Alert tone="success" onClose={() => setDone(null)}>
-              {done} {done === 1 ? "arquivo pronto" : "arquivos prontos"} em <Code className="text-success">exports/{marketplace}/</Code>
+              <div className="space-y-3">
+                <p>
+                  {done} {done === 1 ? "arquivo pronto" : "arquivos prontos"} em <Code className="text-success">exports/{marketplace}/</Code>
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busy === "folder"}
+                  onClick={() => run("folder", () => api("/api/actions/open_export_folder", { method: "POST", json: { slug: product.slug, marketplace } }))}
+                >
+                  {busy === "folder" ? <Spinner /> : <Icon icon={FolderOpen} />} Abrir pasta
+                </Button>
+              </div>
             </Alert>
           )}
         </Card>

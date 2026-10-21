@@ -11,6 +11,8 @@ import {
 } from "../products";
 import { nextStep, stateFromProduct, stateFromSummary } from "../workflow";
 import { listingRequirements } from "../listing";
+import { openExportFolder } from "../export";
+import { marketplaces } from "../config";
 import { defineAction } from "./define";
 
 export const slug = z.string().min(1).describe("Identificador do produto (nome da pasta), ex.: cavalo-carrossel");
@@ -41,6 +43,17 @@ export const getNextStepAction = defineAction({
   input: z.object({ slug }),
   readOnly: true,
   run: ({ slug }) => nextStep(stateFromProduct(getProduct(slug))),
+});
+
+export const openExportFolderAction = defineAction({
+  name: "open_export_folder",
+  title: "Abrir pasta dos arquivos",
+  description: "Abre no explorador de arquivos a pasta local dos arquivos preparados para um marketplace.",
+  input: z.object({
+    slug,
+    marketplace: z.string().refine((value) => Boolean(marketplaces()[value]), "Marketplace desconhecido"),
+  }),
+  run: ({ slug, marketplace }) => openExportFolder(slug, marketplace),
 });
 
 export const createProductAction = defineAction({
