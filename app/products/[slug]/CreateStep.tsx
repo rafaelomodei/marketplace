@@ -171,7 +171,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
 
         {mode === "social" && (
           <>
-            <FormSection title="Canal e formato" hint="A referência visual oficial da Verde Forma é aplicada automaticamente, junto das proporções e áreas seguras.">
+            <FormSection title="Canal e formato" hint="A identidade, os tamanhos de texto, o estilo da chamada e a logo oficial são aplicados automaticamente.">
               <div className="space-y-5">
                 <Field as="div" label="Rede social">
                   <ChoiceGroup value={socialPlatform} onChange={setSocialPlatform} options={SOCIAL_PLATFORM_OPTIONS} />

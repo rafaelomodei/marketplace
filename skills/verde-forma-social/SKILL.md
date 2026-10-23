@@ -33,9 +33,9 @@ Evitar aparência de loja genérica, estética infantil em todas as peças, exce
 
 ### Logo e assinatura
 
-- Só inserir uma logo quando o arquivo oficial estiver anexado e explicitamente identificado no JOB.
-- Nunca redesenhar, reinterpretar ou gerar a logo por texto.
-- Sem logo oficial anexada, entregar a peça sem logo; pode-se reservar uma área discreta para composição posterior somente se o briefing pedir.
+- Toda peça social deve receber exatamente uma das variantes oficiais anexadas e explicitamente identificadas no JOB.
+- Importar o asset como camada gráfica; nunca redesenhar, reinterpretar, digitar, recolorir ou gerar a logo por texto.
+- Escolher a variante pelo contraste do fundo conforme o guia operacional, sem misturar duas assinaturas na mesma peça.
 - Não inventar arroba, domínio, selo ou marca d'água.
 
 ### Texto
@@ -59,7 +59,7 @@ Evitar aparência de loja genérica, estética infantil em todas as peças, exce
 - Não cortar partes essenciais do produto e não colocar texto sobre área visualmente complexa.
 - Usar no máximo dois recursos gráficos secundários por peça.
 - Em uma peça de produto, reservar aproximadamente 55–70% da área visual para fotografia/produto e 20–30% para headline e apoio. A headline jamais pode ocupar metade da tela.
-- Usar cantos ou curvas suaves apenas quando coerentes com a referência; nunca transformar o CTA em botão publicitário grande e saturado.
+- Usar cantos ou curvas suaves apenas quando coerentes com a referência; o CTA segue sempre a cápsula institucional compacta do guia operacional.
 
 O reconhecimento deve vir da consistência da direção de arte, não da repetição mecânica de um template.
 
@@ -83,7 +83,7 @@ Os códigos são referências visuais inspiradas na identidade aprovada. Cores i
 - Preservar as cores reais do produto, mesmo fora da paleta, **somente dentro do próprio produto**.
 - Cores do produto que estejam fora da paleta — como azul vivo, laranja, amarelo ou verde saturado — não podem migrar para headline, CTA, molduras, ícones ou fundos.
 - Texto principal deve usar verde profundo `#2E5939` ou grafite quente `#34382F`. Um trecho curto em itálico pode usar rosa queimado/blush escurecido com contraste suficiente.
-- CTA deve ser discreto: texto verde/grafite sobre base clara, contorno fino ou pequeno bloco neutro. Proibido botão laranja, azul, amarelo ou outra cor saturada.
+- CTA deve ser discreto e padronizado: cápsula caramelo institucional, texto creme e sem efeito elevado. Proibido botão laranja vivo, azul, amarelo ou outra cor fora da paleta.
 - Garantir contraste; evitar rosa ou lilás claros sobre bege claro.
 - Proibidos neon decorativo, gradientes intensos, glow, cromo e estética gamer/tech.
 
@@ -98,6 +98,7 @@ Os códigos são referências visuais inspiradas na identidade aprovada. Cores i
 - Preferir itálico da própria serif a acrescentar uma terceira fonte.
 - Evitar caixa alta em blocos, tracking excessivo, frases longas e scripts ilegíveis.
 - Não usar serif genérica pesada ou display dramática em tamanho monumental. A headline deve ser editorial, delicada e proporcional ao produto.
+- Em qualquer canvas social de 1080 px de largura, usar os tokens fixos do guia operacional: título 88 px, apoio 34 px, informação auxiliar 24 px e CTA 30 px. Não redimensionar livremente para “preencher” a composição.
 - Texto exato é prioritário. Se o gerador não conseguir renderizá-lo com fidelidade, criar a fotografia/fundo com área limpa para composição tipográfica posterior, em vez de inventar caracteres.
 
 ## 6. Ícones e ornamentos
@@ -138,7 +139,7 @@ Escolher a variante que melhor atende ao objetivo, sem repetir sempre a mesma es
 2. Produto + mensagem: composição assimétrica, produto em um lado e headline curta em área limpa.
 3. Detalhe personalizado: close nítido da inscrição ou acabamento real, com apoio discreto.
 4. Capa temática: headline forte, elemento visual dominante e espaço para continuidade de carrossel.
-5. Institucional: mensagem curta e bastante respiro; logo somente se o asset oficial estiver presente.
+5. Institucional: mensagem curta, bastante respiro e exatamente uma variante oficial da logo.
 6. Oferta: hierarquia para informação precisa; preço e condições somente quando fornecidos.
 
 ### Receita padrão para post de produto em feed 4:5
@@ -150,8 +151,9 @@ Quando o briefing não determinar outro layout, usar esta estrutura:
 3. Trecho curto opcional em itálico rosa queimado, como nos exemplos oficiais.
 4. Texto de apoio em Poppins/grafite, pequeno e legível, com largura curta.
 5. Produto como maior elemento da peça, inteiro e nítido, ocupando aproximadamente 55–65% da altura.
-6. CTA, se fornecido, como assinatura discreta no rodapé ou pequeno bloco neutro; nunca como botão dominante.
-7. No máximo uma curva fina, coração outline ou ramo discreto. Não usar ornamento só para preencher espaço.
+6. CTA, se fornecido, como cápsula institucional de 68 px no rodapé; nunca como botão dominante.
+7. Uma variante oficial da logo no canto inferior esquerdo, abaixo do CTA quando ele existir.
+8. No máximo uma curva fina, coração outline ou ramo discreto. Não usar ornamento só para preencher espaço.
 
 Antes de gerar, declarar internamente as escolhas: cor do fundo, cor da headline, proporção do produto, posição do texto e tratamento do CTA. Todas devem corresponder a esta receita ou à referência visual.
 
@@ -175,6 +177,8 @@ Antes de entregar, rejeitar e refazer se qualquer item falhar:
 - Paleta, tipografia e ícones não são coerentes.
 - Headline usa azul, laranja, amarelo vivo ou outra cor do produto fora da paleta institucional.
 - CTA parece um botão grande de anúncio ou compete com o produto.
+- Título, apoio, informação auxiliar ou CTA fogem dos tokens fixos de tamanho.
+- Logo oficial ausente, duplicada, recolorida, redesenhada, deformada ou sem área de proteção.
 - Headline ocupa mais de 30% da altura ou tem mais peso visual que o produto.
 - Ornamentos competem com o produto.
 - Luz, sombra, escala ou perspectiva parecem artificiais.

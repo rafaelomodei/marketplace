@@ -43,8 +43,8 @@ Canvas: 1080 × 1350. Coordenadas são normalizadas e adaptáveis.
 | Apoio | x 7–41%; y 36–50% | 3–5 linhas curtas |
 | Produto | x 43–95%; y 17–79% | grande, inteiro, nítido e sem texto por cima |
 | Contexto/superfície | x 0–100%; y 62–100% | primeiro plano realista e subordinado |
-| CTA | x 6–49%; y 83–89% | cápsula caramelo discreta |
-| Logo | x 7–34%; y 91–97% | asset oficial pequeno; omitir quando ausente |
+| CTA | x 6%; ancorado 20 px acima da logo | cápsula caramelo de 68 px de altura |
+| Logo | x 6%; margem inferior 4% | uma variante oficial, sem deformação |
 | Ornamentos | cantos/vazios | esparsos, sem invadir texto ou produto |
 
 Parâmetros:
@@ -53,7 +53,7 @@ Parâmetros:
 - Texto principal: 35–43% W em composição dividida.
 - Produto: 50–65% W e 55–70% H.
 - Respiro texto/produto: mínimo 2–4% W.
-- Título: 3,5–5× o corpo, ajustado ao comprimento.
+- Título, apoio, informação auxiliar e CTA usam os tokens fixos abaixo; ajustar a caixa e as quebras, não o tamanho da fonte.
 - Produto em layout A: âncora inicial próxima a `(0.68W, 0.47H)`.
 - Marca subordinada ao título e ao produto.
 - Ornamentos: no máximo 3–6 motivos pequenos; reduzir quando o produto for colorido.
@@ -69,6 +69,29 @@ Antes de gerar, identificar silhueta e orientação reais. Não inventar rotaç�
 - **E — carrossel:** capa editorial; páginas seguintes priorizam detalhe e informação concreta.
 
 Não escolher A cegamente. Registrar mentalmente a justificativa da variante.
+
+## Tokens fixos de composição
+
+Todos os formatos suportados têm 1080 px de largura. Por isso, os mesmos valores abaixo valem para feed 4:5, feed 1:1 e vertical 9:16. Eles são tokens, não intervalos nem sugestões.
+
+| Elemento | Token obrigatório |
+|---|---|
+| Margem lateral segura | 65 px |
+| Título | 88 px; entrelinha 86 px |
+| Ênfase curta no título | 88 px; Playfair Display Italic |
+| Texto de apoio/subtítulo | 34 px; entrelinha 46 px |
+| Informação auxiliar/legenda | 24 px; entrelinha 32 px |
+| Texto do CTA | 30 px; entrelinha 36 px |
+| Cápsula do CTA | 68 px de altura; padding horizontal de 36 px; raio de 34 px |
+| Espaço entre CTA e logo | 20 px |
+
+Regras de aplicação:
+
+- Não aumentar ou reduzir um token para preencher espaço. Resolver comprimento com largura de caixa, quebras semânticas, variante de layout e remoção de ornamentos.
+- Título ocupa no máximo quatro linhas. Se o texto não couber, ampliar a caixa ou usar uma variante com texto em largura maior; não condensar, esticar nem reduzir a fonte.
+- Apoio ocupa no máximo cinco linhas e mantém a entrelinha definida.
+- CTA tem largura determinada pelo conteúdo e padding, entre 260 e 468 px; nunca esticar até a largura total da peça.
+- Todo texto permanece dentro da margem segura e sem interseção com produto, CTA ou logo.
 
 ## Tipografia exata por papel
 
@@ -95,15 +118,14 @@ Título:
 - 2–4 linhas, alinhamento à esquerda, entrelinha apertada e confortável.
 - Verde-oliva; uma palavra/expressão curta pode ser caramelo e itálica.
 - Sem sombra pesada, contorno, neon, gradiente ou fonte display genérica pesada.
-- Para 1080 × 1350: 74–112 px como ponto de partida.
+- Em todos os formatos: exatamente 88 px, com entrelinha de 86 px.
 
 Apoio:
 
 - Logo abaixo do título/ornamento, até 90–120 caracteres quando couber.
-- Quebras por unidade semântica; entrelinha 1,3–1,5.
-- Para 1080 × 1350: 29–38 px.
+- Quebras por unidade semântica; exatamente 34 px, com entrelinha de 46 px.
 
-CTA: 27–35 px. Informação auxiliar: 19–27 px. Ajustar sem colisão e validar em tela pequena.
+CTA: exatamente 30 px, com entrelinha de 36 px. Informação auxiliar: exatamente 24 px, com entrelinha de 32 px. Ajustar caixas e quebras sem colisão e validar em tela pequena.
 
 ## Fotografia e ambientação
 
@@ -137,9 +159,9 @@ Proibidos: emojis, ícones 3D, sombras em ícones, stickers, doodles infantis ca
 
 Somente quando fornecido e factual. Cápsula horizontal caramelo no rodapé do lado do texto:
 
-- referência: `left 6%`, `top 83%`, largura 37–44% W, altura 4,4–5,2% H;
-- raio 999 px, fundo `#BC8756`, Poppins Medium creme/branco;
-- seta fina à direita, padding proporcional;
+- `left 65 px`, largura conforme o texto entre 260 e 468 px, altura exata de 68 px;
+- raio de 34 px, padding horizontal de 36 px, fundo `#BC8756`, Poppins Medium 30 px em `#FAF8F3`;
+- sem seta, ícone ou ornamento adicional, a menos que tenham sido pedidos explicitamente;
 - sem brilho, contorno chamativo ou sombra elevada;
 - nunca sobrepor o produto.
 
@@ -147,10 +169,15 @@ Se vazio, remover o componente e redistribuir o espaço. Não inventar CTA.
 
 ## Logo
 
-- Importar SVG/PNG transparente oficial de caminho configurado.
-- Nunca gerar, redesenhar ou substituir por flor/folha.
-- Referência: 15–25% W, margem mínima 5% W, pequena sob o CTA.
-- Sem asset: exportar sem marca; não deixar placeholder nem logo falsa.
+- Inserir exatamente uma variante oficial anexada em toda peça social. Importar o PNG como camada; nunca gerar, redesenhar, recolorir, cortar ou substituir por flor/folha.
+- Posição padrão: canto inferior esquerdo, alinhada a `left 65 px`. Em feed 4:5 e 1:1, usar margem inferior de 54 px. Em 9:16, posicionar a borda inferior em 79% da altura para ficar acima dos controles da plataforma.
+- Fundo claro e uniforme: `BRASÃO OFICIAL TRANSPARENTE`, largura exata de 96 px.
+- Fundo escuro ou verde com área horizontal: `LOGO OFICIAL HORIZONTAL`, largura exata de 216 px.
+- Fundo escuro ou verde com espaço compacto: `LOGO OFICIAL EM COLUNA`, largura exata de 194 px.
+- Fundo fotográfico movimentado: `ÍCONE OFICIAL EM BASE BRANCA`, 72 × 72 px.
+- Manter proporção original e transparência. Nunca esticar por largura e altura ao mesmo tempo.
+- Área de proteção: nenhum texto, produto, CTA ou ornamento a menos de 20 px do limite visível da marca.
+- Quando houver CTA, posicioná-lo 20 px acima da área de proteção da logo. Sem CTA, a logo permanece no mesmo lugar; os demais elementos não descem para ocupá-lo.
 
 ## Método obrigatório
 
@@ -174,7 +201,7 @@ Pontuar antes de entregar:
 |---|---:|
 | Produto fiel | bloqueante |
 | Texto exato | bloqueante |
-| Logo oficial, se exigida | bloqueante |
+| Exatamente uma logo oficial, intacta e na posição/tamanho do padrão | bloqueante |
 | Hierarquia título > apoio > CTA > assinatura | 0–2 |
 | Produto grande, focado e sem sobreposição | 0–2 |
 | Variante/asimetria justificada | 0–2 |
@@ -193,8 +220,8 @@ Qualquer bloqueio reprova. Demais critérios precisam somar pelo menos 14/16; ab
 4. Ajustar hierarquia à quantidade real de texto.
 5. Usar no máximo 1–2 acentos sobre base neutra.
 6. Escolher somente ornamentos pertinentes.
-7. Adicionar CTA apenas se informado.
-8. Importar logo real apenas se disponível.
+7. Adicionar CTA apenas se informado, sempre com o token de cápsula institucional.
+8. Importar exatamente uma variante oficial de logo, escolhida pelo contraste do fundo.
 9. Renderizar e executar QA factual/visual.
 
 Campos vazios não geram rótulos, placeholders, blocos ou reserva visual.

@@ -8,6 +8,7 @@ export const CONFIG_DIR = path.join(ROOT, "config");
 export const SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-image", "SKILL.md");
 export const SOCIAL_SKILL_FILE = path.join(ROOT, "skills", "verde-forma-social", "SKILL.md");
 export const SOCIAL_DIRECTION_FILE = path.join(ROOT, "skills", "verde-forma-social", "references", "direcao-de-arte.md");
+export const SOCIAL_LOGO_DIR = path.join(ROOT, "skills", "verde-forma-social", "assets", "logos", "rendered");
 export const SOCIAL_REFERENCE_FILE = path.resolve(
   process.env.VERDE_FORMA_SOCIAL_REFERENCE ??
     path.join(ROOT, "skills", "verde-forma-social", "assets", "referencia-post-vela-2-anos.png"),

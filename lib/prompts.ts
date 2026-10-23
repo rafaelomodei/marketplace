@@ -112,6 +112,8 @@ export type PromptContext = {
   skill: string;
   /** Number of canonical Verde Forma visual references attached after product images. */
   socialReferenceCount?: number;
+  /** Official logo variants attached after the visual references, in this exact order. */
+  socialBrandAssets?: { label: string; use: string }[];
   /** First social input is an approved/generated composition that must be edited in place. */
   socialBaseTarget?: boolean;
 };
@@ -198,6 +200,11 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
         images.push(
           `${imageRange(p.productImageIds.length + 1, ctx.socialReferenceCount)}: REFERÊNCIA VISUAL OBRIGATÓRIA DA MARCA — copiar o sistema visual (paleta, tipografia, proporções, respiro, hierarquia e linguagem fotográfica); ignorar os produtos, textos e logos presentes nessa referência.`,
         );
+      let nextSocialImage = p.productImageIds.length + (ctx.socialReferenceCount ?? 0) + 1;
+      for (const asset of ctx.socialBrandAssets ?? []) {
+        images.push(`Imagem ${nextSocialImage}: ${asset.label} — ${asset.use}. Importar sem redesenhar, recolorir, recortar ou deformar.`);
+        nextSocialImage += 1;
+      }
       const platform = { instagram: "Instagram", tiktok: "TikTok", facebook: "Facebook" }[p.platform];
       const format = {
         "feed-portrait": "feed retrato 4:5 (1080 × 1350 px)",
@@ -206,7 +213,7 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       }[p.format];
       task.push(`Criar uma peça estática para ${platform}, no formato ${format}, seguindo integralmente o guia específico de redes sociais acima.`);
       task.push("A referência visual da marca anexada é um ALVO DE DIREÇÃO DE ARTE, não apenas inspiração. A saída deve parecer uma nova publicação do mesmo perfil.");
-      task.push("Antes de gerar, elaborar internamente um plano estruturado com: variante A–E, caixas normalizadas de produto/título/apoio/CTA, margem segura, paleta da interface e ornamentos. Só então gerar a cena e aplicar a composição gráfica.");
+      task.push("Antes de gerar, elaborar internamente um plano estruturado com: variante A–E, caixas normalizadas de produto/título/apoio/CTA/logo, margem segura, paleta da interface e ornamentos. Só então gerar a cena e aplicar a composição gráfica.");
       task.push("Executar na ordem: (1) planejar caixas sem colisão; (2) produzir a cena preservando o produto e deixando as áreas reservadas vazias; (3) aplicar texto e CTA como camada gráfica; (4) pontuar o QA. Rejeitar a própria saída se houver bloqueio ou nota menor que 14/16.");
       if (ctx.socialBaseTarget)
         task.push("EDITAR A IMAGEM 1, não recriá-la. Tratar a região do produto como máscara bloqueada: não redesenhar, rel iluminar, completar, estilizar ou substituir nenhum pixel essencial do objeto. As imagens seguintes servem para auditoria de fidelidade.");
@@ -215,7 +222,8 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       task.push(`HEADLINE: ${p.headline?.trim() || "não inserir"}.`);
       task.push(`TEXTO DE APOIO: ${p.supportingText?.trim() || "não inserir"}.`);
       task.push(`CHAMADA PARA AÇÃO: ${p.cta?.trim() || "não inserir"}.`);
-      task.push("Não criar logo, arroba, preço, condição comercial ou texto que não tenha sido fornecido neste job.");
+      task.push("ASSINATURA OBRIGATÓRIA: inserir exatamente uma das variantes oficiais anexadas, escolhida pelo contraste do fundo e nas dimensões/posição definidas pelo guia. A geometria, as proporções, as cores e a área de proteção do asset são imutáveis.");
+      task.push("Não criar logo, arroba, preço, condição comercial ou texto por conta própria. A logo deve ser importada somente dos assets oficiais anexados; os demais itens só entram quando fornecidos neste job.");
       break;
     }
   }

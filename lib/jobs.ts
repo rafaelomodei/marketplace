@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { filamentRefFiles, findFilament, generationSkill, socialGenerationSkill, socialStyleReferenceFiles } from "./config";
+import { filamentRefFiles, findFilament, generationSkill, SOCIAL_BRAND_ASSET_COUNT, socialBrandAssets, socialGenerationSkill, socialStyleReferenceFiles } from "./config";
 import { db, now, type JobRow } from "./db";
 import { runCodex } from "./engine/codex";
 import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
@@ -81,8 +81,11 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
     const params = withFilamentRefs(job);
     validate(product, params);
     const socialRefs = params.type === "social" ? socialStyleReferenceFiles() : [];
+    const brandAssets = params.type === "social" ? socialBrandAssets() : [];
     if (params.type === "social" && !socialRefs.length)
       throw new HttpError(500, "A referência visual da Verde Forma não foi encontrada. Configure VERDE_FORMA_SOCIAL_REFERENCE.");
+    if (params.type === "social" && brandAssets.length !== SOCIAL_BRAND_ASSET_COUNT)
+      throw new HttpError(500, "Os assets oficiais da marca Verde Forma não foram encontrados.");
     const jobSkill = params.type === "social" ? `${skill}\n\n---\n\n${socialGenerationSkill()}` : skill;
     const socialBaseTarget =
       params.type === "social" && ["approved", "generated"].includes(getImage(params.productImageIds[0]).kind);
@@ -91,6 +94,7 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
       filament: findFilament,
       skill: jobSkill,
       socialReferenceCount: socialRefs.length,
+      socialBrandAssets: brandAssets.map(({ label, use }) => ({ label, use })),
       socialBaseTarget,
     });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
@@ -123,7 +127,8 @@ function jobInputPaths(p: JobParams): string[] {
   const images = jobInputIds(p).map((id) => imagePath(getImage(id)));
   const refs = p.type === "recolor" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
   const socialRefs = p.type === "social" ? socialStyleReferenceFiles() : [];
-  return [...images, ...refs, ...socialRefs];
+  const brandAssets = p.type === "social" ? socialBrandAssets().map((asset) => asset.file) : [];
+  return [...images, ...refs, ...socialRefs, ...brandAssets];
 }
 
 export function getJob(id: string): JobRow {
