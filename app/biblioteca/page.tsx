@@ -197,7 +197,7 @@ export default function LibraryPage() {
             <p className="text-sm text-ink-muted">Nenhum projeto encontrado.</p>
           ) : (
             <div className="grid gap-5 lg:grid-cols-2">
-              {shown.map((p) => <LibraryCard key={p.slug} project={p} printer={printer || undefined} />)}
+              {shown.map((p) => <LibraryCard key={p.slug} project={p} />)}
             </div>
           )}
         </div>

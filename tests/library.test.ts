@@ -201,6 +201,10 @@ describe("library folders", () => {
     expect(lib.listProjects().find((p) => p.slug === slug)?.object).toMatchObject({ size: { width: 120, depth: 80, height: 150 }, pieces: 3, source: "manual" });
     lib.updateProject(slug, { salePrices: [{ quantity: 10, price: 120 }, { quantity: 1, price: 15 }, { quantity: 10, price: 110 }] });
     expect(lib.listProjects().find((p) => p.slug === slug)?.salePrices).toEqual([{ quantity: 1, price: 15 }, { quantity: 10, price: 110 }]);
+    // the card lists each variation with its own prices (the main one follows the project's)
+    expect(lib.listProjects().find((p) => p.slug === slug)?.variations).toEqual([
+      expect.objectContaining({ id: "principal", title: "Principal", parts: 1, salePrices: [{ quantity: 1, price: 15 }, { quantity: 10, price: 110 }] }),
+    ]);
     const moved = lib.moveProjectFile(slug, rel, "source");
     lib.removeProjectFile(slug, moved);
     expect(lib.readProjectMeta(slug).salePrices).toHaveLength(2);

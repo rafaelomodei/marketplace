@@ -193,6 +193,32 @@ export type Variant = {
   price: number | null;
 };
 
+/** A variation as the library card shows it: production cost against sale price, per finished object. */
+export type VariationSummary = {
+  id: string;
+  title: string;
+  size: string;
+  feature: string;
+  status: VariationView["status"];
+  /** 3MF files (parts) that print it. */
+  parts: number;
+  /** Cost of one finished object (all parts), normal colour; null until calculated. */
+  cost: number | null;
+  /** Sale price suggested by the margin settings. */
+  suggested: number | null;
+  salePrices: SalePrice[];
+  /** Filament per finished object. */
+  grams: number | null;
+  /** Printing time of all parts. */
+  seconds: number | null;
+  /** Finished objects one print yields (single-file variations; 1 for several parts). */
+  units: number;
+  /** Filaments used by its parts (type and colour). */
+  filaments: { type: string; color: string }[];
+  /** Size measured in the model (single one-piece file). */
+  measured: Dimensions | null;
+};
+
 export type ProjectSummary = {
   slug: string;
   name: string;
@@ -208,6 +234,8 @@ export type ProjectSummary = {
   salePrices: SalePrice[];
   /** Every ready-to-print file (printer/material versions), calculated or not. */
   variants: Variant[];
+  /** What is sold: each variation with its cost and sale price per finished object (always at least the main one). */
+  variations: VariationSummary[];
   /** `total` and `price` are per finished object; grams and seconds are for the whole print of `units` objects. */
   main: { file: string; units: number; grams: number; seconds: number; total: number; price: number; printer: string; colors: string[] } | null;
   calculating: boolean;
@@ -639,6 +667,37 @@ export function variationViews(meta: ProjectMeta, files: LibraryFile[], s: CostS
   });
 }
 
+/** The card's view of each variation; a project from before variations shows its main one without saving it. */
+function variationSummaries(meta: ProjectMeta, files: LibraryFile[], s: CostSettings): VariationSummary[] {
+  const first = files.find((f) => f.folder === "print" && f.info?.configured);
+  const withMain = meta.variations.length ? meta
+    : { ...meta, variations: [variationSchema.parse({ id: MAIN_VARIATION, title: "Principal", files: first ? [first.rel] : [], salePrices: meta.salePrices })] };
+  const byRel = new Map(files.map((f) => [f.rel, f]));
+  return variationViews(withMain, files, s).map((v) => {
+    const own = v.files.map((rel) => byRel.get(rel)).filter((f): f is LibraryFile => !!f);
+    const filaments = own.flatMap((f) => {
+      const d = f.slice?.status === "done" ? f.slice : null;
+      return d ? d.stats.filaments.filter((_, i) => (d.stats.grams[i] ?? 0) > 0) : (f.info?.filaments ?? []);
+    });
+    return {
+      id: v.id,
+      title: v.title,
+      size: v.size,
+      feature: v.feature,
+      status: v.status,
+      parts: own.length,
+      cost: v.cost?.total ?? null,
+      suggested: v.cost?.price ?? null,
+      salePrices: v.salePrices,
+      grams: v.grams,
+      seconds: v.seconds,
+      units: own.length === 1 ? (own[0].slice?.status === "done" ? own[0].slice.cost.units : own[0].units.count) : 1,
+      filaments: [...new Map(filaments.map((x) => [`${x.type}${x.color}`, { type: x.type, color: x.color }])).values()],
+      measured: v.measured,
+    };
+  });
+}
+
 export const MAIN_VARIATION = "principal";
 
 /**
@@ -730,6 +789,7 @@ export type Project = ReturnType<typeof getProject>;
 
 export function listProjects(): ProjectSummary[] {
   const dirs = fs.readdirSync(root(), { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".") && fs.existsSync(path.join(root(), d.name, "projeto.json")));
+  const settings = getCostSettings();
   return dirs
     .map((d) => {
       const slug = d.name;
@@ -747,6 +807,7 @@ export function listProjects(): ProjectSummary[] {
         pictures: pictureCount(meta, files),
         object: objectSize(meta, files, coverOf(meta, files)),
         salePrices: meta.salePrices,
+        variations: variationSummaries(meta, files, settings),
         variants: files.filter((f) => f.folder === "print").map((f): Variant => {
           const d = f.slice?.status === "done" ? f.slice : null;
           const filaments = d
