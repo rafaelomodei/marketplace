@@ -583,6 +583,7 @@ describe("library background work", () => {
       `echo "end" >> "${log}"`,
     ].join("\n"));
     fs.chmodSync(fake, 0o755);
+    await lib.whenIdle(); // files of earlier tests must not reach the fake slicer
     setSlicerSettings({ path: fake });
     try {
       const slug = lib.createProject("Fila de fatiamento");
