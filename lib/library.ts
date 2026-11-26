@@ -58,7 +58,7 @@ const salePricesSchema = z.array(salePriceSchema).default([])
 /**
  * A version of the same product sold side by side: another size (10 cm, 15 cm) and/or another feature (a different
  * base). Each points to the project files that print it — several files are parts printed apart (body + base) and
- * are added up; files for different printers are alternatives. Size and feature combine freely ("15 cm · base redonda").
+ * are added up. Size and feature combine freely ("15 cm · base redonda").
  */
 export const variationSchema = z.object({
   /** Stable id (made from the first title), used by actions. */
@@ -298,14 +298,14 @@ export function classify(name: string, data: Uint8Array): FolderKind {
 
 /** Saves files into a project, named by the library pattern (project name + printer). */
 /**
- * Saves STL/3MF files in a project. Ready-to-print 3MF join `variation` when given; otherwise, while the product has
- * a single variation, they join it unless it already prints on that printer (then they stay loose, to be placed).
+ * Saves STL/3MF files in a project. Ready-to-print 3MF become parts of `variation` when given; otherwise the first one
+ * goes to a product that has no file yet and the rest stay loose, to be placed.
  */
 export function addProjectFiles(slug: string, files: { name: string; data: Uint8Array }[], folder?: FolderKind, variation?: string): string[] {
   const dir = projectDir(slug);
   const meta = ensureVariations(slug);
   if (variation) findVariation(meta, variation);
-  const ready: { rel: string; printer: string }[] = [];
+  const ready: { rel: string }[] = [];
   const saved = files.map((f) => {
     if (!MODEL_EXT.test(f.name)) throw new HttpError(400, `Formato não suportado: ${f.name} (use STL ou 3MF)`);
     const info = infoOf(f.name, f.data);
@@ -315,17 +315,15 @@ export function addProjectFiles(slug: string, files: { name: string; data: Uint8
     const name = freeName(target, `${standardFileBase(meta.name, info?.printer ?? null)}${path.extname(f.name).toLowerCase()}`);
     fs.writeFileSync(path.join(target, name), f.data);
     const rel = path.posix.join(path.basename(target), name);
-    if (kind === "print" && info?.configured) ready.push({ rel, printer: info.printer ?? "" });
+    if (kind === "print" && info?.configured) ready.push({ rel });
     return rel;
   });
   if (ready.length) {
-    const target = variation ?? (meta.variations.length === 1 ? meta.variations[0].id : null);
-    if (target) {
-      const v = findVariation(meta, target);
-      const printers = new Set(v.files.filter((rel) => fs.existsSync(projectFile(slug, rel))).map((rel) => { const abs = projectFile(slug, rel); return fileInfo(slug, rel, abs, fs.statSync(abs)).info?.printer ?? ""; }));
-      const join = variation ? ready.map((r) => r.rel) : ready.filter((r) => !printers.has(r.printer) && (printers.add(r.printer), true)).map((r) => r.rel);
-      if (join.length) updateProject(slug, { variations: meta.variations.map((x) => (x.id === target ? { ...x, files: [...x.files, ...join] } : x)) });
-    }
+    // Said which variation: those are its parts. Not said: they start a product with no file yet; otherwise it is
+    // unclear (another part? another size?) and they wait, loose, to be placed.
+    const target = variation ?? (meta.variations.length === 1 && !meta.variations[0].files.length ? meta.variations[0].id : null);
+    const join = variation ? ready.map((r) => r.rel) : ready.slice(0, 1).map((r) => r.rel);
+    if (target) updateProject(slug, { variations: meta.variations.map((x) => (x.id === target ? { ...x, files: [...x.files, ...join] } : x)) });
   }
   return saved;
 }
@@ -591,26 +589,14 @@ export function removeVariation(slug: string, id: string) {
   return { ok: true };
 }
 
-/** Cost of a variation on one printer: its parts added up (see combineCosts). */
-export type VariationOption = {
-  printer: string;
-  files: string[];
-  /** null while any part is not calculated yet. */
+export type VariationView = Variation & {
+  /** done = every part has a cost; calculating = slicing; waiting = a part is not ready (not configured, failed…); empty = no file. */
+  status: "done" | "calculating" | "waiting" | "empty";
+  /** Cost of one finished object, all parts added up (normal colour); null until every part is calculated. */
   cost: CostBreakdown | null;
   /** Filament per finished object, all parts. */
   grams: number | null;
   /** Printing time of all parts (whole prints). */
-  seconds: number | null;
-};
-
-export type VariationView = Variation & {
-  /** done = has a cost; calculating = slicing; waiting = a file is not ready (not configured, failed…); empty = no file. */
-  status: "done" | "calculating" | "waiting" | "empty";
-  /** One per printer the files are set up for; the first is the main one. */
-  options: VariationOption[];
-  /** The main option's cost per finished object (normal colour). */
-  cost: CostBreakdown | null;
-  grams: number | null;
   seconds: number | null;
   /** Size measured in the model when the variation is a single one-piece file. */
   measured: Dimensions | null;
@@ -618,34 +604,21 @@ export type VariationView = Variation & {
   colors: { name: string; perKg: number; surcharge: number; total: number; price: number }[];
 };
 
-const printerName = (f: LibraryFile) =>
-  (f.slice?.status === "done" ? f.slice.cost.printer : f.info?.printer?.replace(/\s*\d+(\.\d+)?\s*nozzle$/i, "")) || "Outra impressora";
-
+/**
+ * Cost of each variation: its files are the parts of one finished object (characters + stable, body + base), each
+ * sliced with its own settings, added up — labour and extras counted once (see combineCosts).
+ */
 export function variationViews(meta: ProjectMeta, files: LibraryFile[], s: CostSettings = getCostSettings()): VariationView[] {
   const byRel = new Map(files.map((f) => [f.rel, f]));
   return meta.variations.map((v) => {
     const own = v.files.map((rel) => byRel.get(rel)).filter((f): f is LibraryFile => !!f);
-    const groups = new Map<string, LibraryFile[]>();
-    for (const f of own) groups.set(printerName(f), [...(groups.get(printerName(f)) ?? []), f]);
-    const options = [...groups].map(([printer, parts]): VariationOption => {
-      const done = parts.map((f) => (f.slice?.status === "done" ? f.slice : null));
-      if (done.some((d) => !d)) return { printer, files: parts.map((f) => f.rel), cost: null, grams: null, seconds: null };
-      const slices = done as Extract<SliceState, { status: "done" }>[];
-      return {
-        printer,
-        files: parts.map((f) => f.rel),
-        cost: combineCosts(slices.map((d) => d.cost), s),
-        grams: Math.round(slices.reduce((n, d) => n + d.stats.grams.reduce((a, b) => a + b, 0) / d.cost.units, 0) * 10) / 10,
-        seconds: slices.reduce((n, d) => n + d.stats.seconds, 0),
-      };
-    });
-    const main = options.find((o) => o.cost) ?? null;
+    const done = own.map((f) => (f.slice?.status === "done" ? f.slice : null));
+    const parts = own.length && done.every(Boolean) ? (done as Extract<SliceState, { status: "done" }>[]) : null;
     const status: VariationView["status"] = !own.length ? "empty"
-      : main ? "done"
-      : own.some((f) => f.slice?.status === "queued" || f.slice?.status === "running") ? "calculating"
+      : parts ? "done"
+      : own.some((f) => f.slice?.status === "queued" || f.slice?.status === "running" || f.measuring) ? "calculating"
       : "waiting";
-    const parts = main ? main.files.map((rel) => byRel.get(rel)!.slice as Extract<SliceState, { status: "done" }>) : [];
-    const colors = main
+    const colors = parts
       ? meta.colors.flatMap((c) => {
           if (c.perKg === null) return [];
           const surcharge = Math.round(parts.reduce((n, d) => n + colorSurcharge(d.stats.grams.map((g) => g / d.cost.units), d.cost.filamentPerKg, c.perKg!, s), 0) * 100) / 100;
@@ -654,7 +627,15 @@ export function variationViews(meta: ProjectMeta, files: LibraryFile[], s: CostS
         })
       : [];
     const single = own.length === 1 && own[0].measure?.pieces === 1 ? own[0].measure.size : null;
-    return { ...v, status, options, cost: main?.cost ?? null, grams: main?.grams ?? null, seconds: main?.seconds ?? null, measured: single, colors };
+    return {
+      ...v,
+      status,
+      cost: parts ? combineCosts(parts.map((d) => d.cost), s) : null,
+      grams: parts ? Math.round(parts.reduce((n, d) => n + d.stats.grams.reduce((a, b) => a + b, 0) / d.cost.units, 0) * 10) / 10 : null,
+      seconds: parts ? parts.reduce((n, d) => n + d.stats.seconds, 0) : null,
+      measured: single,
+      colors,
+    };
   });
 }
 
@@ -662,17 +643,14 @@ export const MAIN_VARIATION = "principal";
 
 /**
  * Every product is at least one variation: the main one. Projects from before variations (or brand new ones) get it
- * here, with the project's prices and its ready files — one per printer, since files of the same printer would add
- * up as parts.
+ * here, with the project's prices and its first ready file (more files would add up as parts; the others wait to be
+ * placed).
  */
 export function ensureVariations(slug: string, files?: LibraryFile[]): ProjectMeta {
   const meta = readProjectMeta(slug);
   if (meta.variations.length) return meta;
-  const printers = new Set<string>();
-  const ready = (files ?? listFiles(slug, meta))
-    .filter((f) => f.folder === "print" && f.info?.configured)
-    .filter((f) => !printers.has(f.info?.printer ?? "") && (printers.add(f.info?.printer ?? ""), true));
-  const main = variationSchema.parse({ id: MAIN_VARIATION, title: "Principal", files: ready.map((f) => f.rel), salePrices: meta.salePrices });
+  const first = (files ?? listFiles(slug, meta)).find((f) => f.folder === "print" && f.info?.configured);
+  const main = variationSchema.parse({ id: MAIN_VARIATION, title: "Principal", files: first ? [first.rel] : [], salePrices: meta.salePrices });
   return updateProject(slug, { variations: [main] });
 }
 

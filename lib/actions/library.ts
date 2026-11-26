@@ -123,7 +123,7 @@ export const setLibraryCoverAction = defineAction({
 });
 
 const variation = z.string().min(1).describe("Id da variação (veja variations em get_library_project), ex.: 15-cm");
-const files = z.array(file).describe("Arquivos 3MF do projeto que imprimem esta variação. Vários arquivos da mesma impressora = partes impressas separadas (corpo + base), somadas; arquivos de impressoras diferentes = alternativas");
+const files = z.array(file).describe("Arquivos 3MF do projeto que imprimem esta variação. Cada arquivo é uma parte impressa separada (ex.: personagens + estábulo, corpo + base) e o custo soma todas. O mesmo arquivo pode estar em várias variações");
 
 export const addLibraryVariationAction = defineAction({
   name: "add_library_variation",
@@ -179,7 +179,7 @@ export const addLibraryFilesAction = defineAction({
   input: z.object({
     project,
     folder: folder.optional(),
-    variation: z.string().min(1).optional().describe("Id da variação que estes 3MF imprimem (ex.: principal). Sem ela, entram na variação única do produto."),
+    variation: z.string().min(1).optional().describe("Id da variação de que estes 3MF são partes (ex.: principal). Sem ela, o primeiro vai para um produto ainda sem arquivo e o resto fica solto para ser colocado."),
     files: z.array(z.object({ name: z.string().min(1), data: z.union([z.string().describe("Conteúdo em base64"), z.instanceof(Uint8Array)]) })).min(1),
   }),
   run: ({ project, folder, variation, files }) => ({

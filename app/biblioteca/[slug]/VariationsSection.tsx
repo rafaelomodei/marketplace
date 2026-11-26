@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, Plus, Trash2 } from "lucide-react";
+import { Copy, Ellipsis, Plus, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PrintFileCard } from "@/components/studio";
 import { Badge, Button, buttonClass, Card, ChoiceGroup, Disclosure, Dropdown, Dropzone, Field, Icon, InlineEdit, Input, MenuItem, Spinner } from "@/components/ui";
@@ -138,11 +138,43 @@ function VariationPanel({ project, variation: v, canRemove, upload, uploading, r
   const unit = v.salePrices.find((t) => t.quantity === 1)?.price ?? null;
   const isCover = (rel: string) => !!project.cover && "file" in project.cover && project.cover.file === rel;
   const ready = project.files.filter((f) => f.folder === "print" && f.info?.configured);
-  const fileChoices = [...ready.map((f) => f.rel), ...v.files.filter((rel) => !byRel.has(rel))].map((rel) => ({
-    value: rel,
-    label: fileLabel(rel),
-    hint: byRel.get(rel)?.info?.printer ?? undefined,
-  }));
+  /** Where else each file is used, to tell a shared part apart. */
+  const usedIn = (rel: string) => project.variations.filter((x) => x.id !== v.id && x.files.includes(rel)).map((x) => x.title);
+  const reusable = ready.filter((f) => !v.files.includes(f.rel));
+  const base = project.variations.find((x) => x.id !== v.id && x.files.length);
+  const addFiles = (rels: string[]) => update({ files: [...v.files, ...rels.filter((r) => !v.files.includes(r))] });
+
+  const reuseMenu = reusable.length > 0 && (
+    <Dropdown
+      align="start"
+      trigger={(open, toggle) => (
+        <Button size="sm" variant="soft" aria-expanded={open} onClick={toggle}>
+          <Icon icon={Copy} /> Usar arquivo que já está no projeto
+        </Button>
+      )}
+    >
+      {(close) =>
+        reusable.map((f) => {
+          const where = usedIn(f.rel);
+          return (
+            <MenuItem key={f.rel} onClick={() => (close(), addFiles([f.rel]))}>
+              <span className="min-w-0">
+                <span className="block truncate">{fileLabel(f.rel)}</span>
+                <span className="block text-xs text-ink-muted">{where.length ? `em ${where.join(", ")}` : "fora de variação"}{f.info?.printer ? ` · ${f.info.printer}` : ""}</span>
+              </span>
+            </MenuItem>
+          );
+        })
+      }
+    </Dropdown>
+  );
+
+  const uploadButton = (label: string) => (
+    <label className={buttonClass({ variant: "soft", size: "sm", className: "cursor-pointer" })}>
+      {uploading ? <Spinner /> : <Icon icon={Upload} />} {label}
+      <input type="file" accept=".3mf,.stl" multiple hidden onChange={(e) => (e.target.files?.length && upload(Array.from(e.target.files), v.id), (e.target.value = ""))} />
+    </label>
+  );
 
   return (
     <Card className="space-y-8 p-5 sm:p-7">
@@ -152,11 +184,11 @@ function VariationPanel({ project, variation: v, canRemove, upload, uploading, r
             <InlineEdit value={v.title} label="Nome da variação" maxLength={60} onChange={(title) => update({ title })} />
           </div>
           <p className="text-sm text-ink-muted">
-            {v.status === "empty" && "Falta o arquivo 3MF desta versão"}
+            {v.status === "empty" && "Falta o 3MF desta versão"}
             {v.status === "calculating" && <span className="inline-flex items-center gap-1.5"><Spinner className="size-3.5" /> Calculando custo…</span>}
-            {v.status === "waiting" && "Aguardando o cálculo do arquivo"}
+            {v.status === "waiting" && (files.length > 1 ? "Falta calcular alguma parte" : "Aguardando o cálculo do arquivo")}
             {v.status === "done" && [
-              files.length > 1 && v.options.length === 1 ? `${files.length} partes` : null,
+              files.length > 1 ? `${files.length} partes` : null,
               v.grams !== null ? formatGrams(v.grams) : null,
               v.seconds !== null ? formatDuration(v.seconds) : null,
               v.measured ? formatSize(v.measured) : null,
@@ -193,30 +225,53 @@ function VariationPanel({ project, variation: v, canRemove, upload, uploading, r
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-ink-strong">Arquivo para imprimir</h3>
-        {files.map((f) => (
-          <PrintFileCard key={f.rel} slug={project.slug} file={f} isCover={isCover(f.rel)} piecesPerObject={project.pieces} onChanged={onChanged} />
-        ))}
-        {v.options.length > 1 && (
-          <ul className="space-y-1 text-sm text-ink-soft">
-            {v.options.map((o) => (
-              <li key={o.printer}>{o.printer}: {o.cost ? `custo ${formatMoney(o.cost.total)} · sugerido ${formatMoney(o.cost.price)}` : "calculando…"}</li>
-            ))}
-          </ul>
-        )}
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-medium text-ink-strong">{files.length > 1 ? `Partes para imprimir (${files.length})` : "Arquivo para imprimir"}</h3>
+          {files.length > 1 && <p className="text-xs text-ink-muted">Cada parte tem seu 3MF e suas configurações. O custo acima soma todas.</p>}
+        </div>
+        {files.map((f, i) => {
+          const where = usedIn(f.rel);
+          return (
+            <div key={f.rel} className="space-y-1.5">
+              {(files.length > 1 || where.length > 0) && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-ink-muted">
+                  {files.length > 1 && <span className="font-medium text-ink-soft">Parte {i + 1}</span>}
+                  {where.length > 0 && <span>Também em {where.join(", ")}</span>}
+                  <button type="button" className="ml-auto underline-offset-2 hover:text-ink-strong hover:underline" onClick={() => update({ files: v.files.filter((r) => r !== f.rel) })}>
+                    Tirar desta variação
+                  </button>
+                </div>
+              )}
+              <PrintFileCard slug={project.slug} file={f} isCover={isCover(f.rel)} piecesPerObject={project.pieces} onChanged={onChanged} />
+            </div>
+          );
+        })}
         {files.length ? (
-          <label className={buttonClass({ variant: "soft", size: "sm", className: "w-fit cursor-pointer" })} title="Outra impressora, ou outra parte impressa separada (corpo + base)">
-            {uploading ? <Spinner /> : <Icon icon={Plus} />} Adicionar outro arquivo
-            <input type="file" accept=".3mf,.stl" multiple hidden onChange={(e) => (e.target.files?.length && upload(Array.from(e.target.files), v.id), (e.target.value = ""))} />
-          </label>
+          <div className="flex flex-wrap gap-2">
+            {uploadButton("Enviar outra parte")}
+            {reuseMenu}
+          </div>
         ) : (
-          <Dropzone
-            onFiles={(list) => upload(list, v.id)}
-            busy={uploading}
-            accept=".3mf,.stl"
-            title="Arraste aqui o 3MF desta versão"
-            hint="Salvo no Creality Print com impressora e filamento · STL vai para os arquivos originais"
-          />
+          <div className="space-y-3">
+            {base && (
+              <Card tone="surface" className="flex flex-wrap items-center gap-3 p-4">
+                <p className="min-w-0 flex-1 text-sm text-ink-soft">
+                  Parte do que já existe em “{base.title}”? Comece pelos mesmos arquivos e envie só o que muda.
+                </p>
+                <Button size="sm" variant="secondary" onClick={() => addFiles(base.files)}>
+                  <Icon icon={Copy} /> Usar os mesmos arquivos
+                </Button>
+              </Card>
+            )}
+            <Dropzone
+              onFiles={(list) => upload(list, v.id)}
+              busy={uploading}
+              accept=".3mf,.stl"
+              title="Arraste aqui o 3MF desta versão"
+              hint="Pode ser mais de um: um por parte impressa separada · STL vai para os arquivos originais"
+            />
+            {reuseMenu}
+          </div>
         )}
       </div>
 
@@ -242,11 +297,6 @@ function VariationPanel({ project, variation: v, canRemove, upload, uploading, r
               <Input value={feature} onChange={(e) => setFeature(e.target.value)} onBlur={() => feature.trim() !== v.feature && update({ feature })} />
             </Field>
           </div>
-          {fileChoices.length > 0 && (
-            <Field as="div" label="Arquivos desta variação" hint="Marque mais de um quando a peça é impressa em partes. Arquivos de impressoras diferentes contam como alternativas.">
-              <ChoiceGroup multiple options={fileChoices} value={v.files} onChange={(next) => update({ files: next })} />
-            </Field>
-          )}
         </div>
       </Disclosure>
     </Card>

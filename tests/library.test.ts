@@ -356,7 +356,7 @@ describe("product variations", () => {
     expect(colorSurcharge([100], [120], 100, settings)).toBe(-2);
   });
 
-  it("computes cost per variation: parts summed, other printers as alternatives, price per colour", () => {
+  it("computes cost per variation: every part summed (even sliced for another printer), price per colour", () => {
     const files = [
       done("fatiados/vaso10_Ender3V3.3mf", 40, 3600),
       done("fatiados/vaso15_Ender3V3.3mf", 110, 9000),
@@ -370,7 +370,7 @@ describe("product variations", () => {
       colors: [{ name: "Dourado seda", perKg: 180 }, { name: "Branco" }],
       variations: [
         { id: "10-cm", title: "10 cm", files: ["fatiados/vaso10_Ender3V3.3mf"] },
-        { id: "15-cm", title: "15 cm", files: ["fatiados/vaso15_Ender3V3.3mf", "fatiados/vaso15_K1Max.3mf"] },
+        { id: "presepio", title: "Presépio com estábulo", files: ["fatiados/vaso15_Ender3V3.3mf", "fatiados/vaso15_K1Max.3mf"] },
         { id: "10-cm-base", title: "10 cm base redonda", files: ["fatiados/vaso10_Ender3V3.3mf", "fatiados/baseRedonda_Ender3V3.3mf"] },
         { id: "vazia", title: "Nova" },
       ],
@@ -379,8 +379,9 @@ describe("product variations", () => {
     const plain = (f: (typeof files)[number]) => (f.slice as { cost: import("@/lib/costing").CostBreakdown }).cost;
     expect(small).toMatchObject({ status: "done", grams: 40, seconds: 3600, measured: { height: 148 } });
     expect(small.cost?.total).toBe(plain(files[0]).total);
-    expect(big.options.map((o) => o.printer)).toEqual(["Ender-3 V3", "Creality K1 Max"]);
-    expect(big.cost?.total).toBe(plain(files[1]).total);
+    // characters on one printer + stable on another: still one object, both parts paid
+    expect(big).toMatchObject({ status: "done", grams: 215, seconds: 14000, measured: null });
+    expect(big.cost!.total).toBeCloseTo(plain(files[1]).total + plain(files[2]).total - plain(files[2]).labor - plain(files[2]).extras, 1);
     expect(withBase.grams).toBe(55);
     expect(withBase.measured).toBeNull();
     expect(withBase.cost!.total).toBeCloseTo(plain(files[0]).total + plain(files[3]).total - plain(files[3]).labor - plain(files[3]).extras, 1);
@@ -438,15 +439,17 @@ describe("product variations", () => {
     const [first] = lib.addProjectFiles(slug, [{ name: "a.3mf", data: await threeMf(true) }]);
     // a new product: the first ready file is the main variation's
     expect(lib.readProjectMeta(slug).variations).toMatchObject([{ id: "principal", files: [first] }]);
-    // same printer again, no variation said: it could be another size, so it waits to be placed
+    // another file, no variation said: another part? another size? it waits to be placed
     const [loose] = lib.addProjectFiles(slug, [{ name: "b.3mf", data: await threeMf(true) }]);
     expect(lib.getProject(slug).loose).toEqual([loose]);
-    const big = lib.addVariation(slug, { title: "20 cm" });
+    // a variation that reuses the base file and gets its own extra part
+    const big = lib.addVariation(slug, { title: "Com estábulo", files: [first] });
     const [third] = lib.addProjectFiles(slug, [{ name: "c.3mf", data: await threeMf(true) }], undefined, big.id);
-    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([third]);
+    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([first, third]);
+    expect(lib.readProjectMeta(slug).variations[0].files).toEqual([first]);
     // originals never join a variation
     lib.addProjectFiles(slug, [{ name: "d.stl", data: stl() }], undefined, big.id);
-    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([third]);
+    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([first, third]);
     const data = await threeMf(true);
     expect(() => lib.addProjectFiles(slug, [{ name: "e.3mf", data }], undefined, "nada")).toThrow(/não encontrada/);
     await lib.whenIdle(); // leave nothing queued for the next tests
