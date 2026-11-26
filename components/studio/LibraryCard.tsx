@@ -45,7 +45,7 @@ function VariantRow({ v, named }: { v: Variant; named?: boolean }) {
  */
 function CardPictures({ project }: { project: ProjectSummary }) {
   const href = `/biblioteca/${project.slug}`;
-  const first: ViewerPicture[] = project.cover ? [{ key: "cover", src: projectPictureUrl(project.slug, project.cover, THUMB, project.updatedAt) }] : [];
+  const first: ViewerPicture[] = project.cover ? [{ key: "cover", src: projectPictureUrl(project.slug, project.cover, THUMB) }] : [];
   const load = async () => {
     const { pictures } = await action<{ pictures: ProjectPicture[] }>("list_library_pictures", { project: project.slug, all: false });
     return pictures.map((p, i) => ({ key: String(i), src: projectPictureUrl(project.slug, p, THUMB, p.version), label: p.label }));
