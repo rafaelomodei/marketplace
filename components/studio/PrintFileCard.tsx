@@ -121,6 +121,11 @@ export function PrintFileCard({ slug, file, isCover, piecesPerObject, onChanged 
                 <Stat label="Preço sugerido por unidade" value={formatMoney(done.cost.price)} strong />
               </div>
             </div>
+            {done.stats.paintIgnored && (
+              <p className="text-xs text-ink-muted">
+                Este modelo tem cores pintadas e o Creality Print trava ao calcular assim. Calculei como uma cor só: o total de gramas e o tempo ficam bem próximos, mas as trocas de filamento não entram.
+              </p>
+            )}
             {used.length > 0 && (
               <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-ink-soft">
                 {used.map((f, i) => (

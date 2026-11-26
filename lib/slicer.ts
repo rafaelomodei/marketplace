@@ -2,10 +2,12 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { Zip as ZipWriter, ZipDeflate } from "fflate";
 import { z } from "zod";
 import { DATA_DIR } from "./paths";
 import { HttpError } from "./products";
 import { readSettings, writeSettings } from "./settings";
+import { Zip } from "./zip";
 
 /**
  * The slicer installed on this machine (Creality Print by default, OrcaSlicer as fallback): opening a 3MF to
@@ -72,6 +74,11 @@ export type SliceStats = {
   printer: string | null;
   filaments: { type: string; color: string; settingsId: string; costPerKg: number }[];
   slicer: string;
+  /**
+   * The model has colours painted on it and the slicer crashed on them, so it was sliced as a single colour: total
+   * grams and time stay close, but the split per colour and the filament swaps are not counted.
+   */
+  paintIgnored?: boolean;
 };
 
 /** "1d 2h 5m 32s" → seconds. */
@@ -124,11 +131,74 @@ const sliceDir = () => {
   return dir;
 };
 
+/** Signs that the slicer itself crashed (its crash reporter then fails writing to "/log"). */
+const CRASHED = /terminate called|core dumped|Segmentation fault|"\/log"/i;
+
 /**
  * Slices every plate of a 3MF with its own settings, in the background (no window), and reads the statistics.
  * The slicer runs with low priority, so the computer (and the browser) stay responsive while it works.
+ * Creality Print crashes slicing models with painted colours from the command line; those are sliced again without
+ * the painting (see `paintIgnored`).
  */
 export async function sliceFile(file: string, timeoutMs = 10 * 60_000): Promise<SliceStats> {
+  try {
+    return await runSlicer(file, timeoutMs);
+  } catch (err) {
+    const crashed = CRASHED.test((err as Error).message);
+    const plain = crashed ? path.join(sliceDir(), `sem-pintura-${process.pid}-${Date.now()}.3mf`) : null;
+    try {
+      if (plain && withoutColorPainting(file, plain)) return { ...(await runSlicer(plain, timeoutMs)), paintIgnored: true };
+    } finally {
+      if (plain) fs.rmSync(plain, { force: true });
+    }
+    if (crashed) throw new Error("O Creality Print travou ao fatiar este arquivo. Abra no fatiador para conferir o modelo.");
+    throw err;
+  }
+}
+
+/**
+ * Copies a 3MF without its painted colours (`paint_color` on the triangles), one entry at a time.
+ * Returns false (and writes nothing) when there is no painting.
+ */
+export function withoutColorPainting(src: string, dst: string): boolean {
+  const zip = new Zip(src);
+  const NEEDLE = Buffer.from(' paint_color="');
+  try {
+    const models = zip.names().filter((n) => n.endsWith(".model"));
+    if (!models.some((n) => zip.read(n)?.includes(NEEDLE))) return false;
+    const fd = fs.openSync(dst, "w");
+    try {
+      const out = new ZipWriter((e, chunk) => {
+        if (e) throw e;
+        fs.writeSync(fd, chunk);
+      });
+      for (const name of zip.names()) {
+        let data = zip.read(name);
+        if (!data) continue;
+        if (name.endsWith(".model")) {
+          const parts: Buffer[] = [];
+          let from = 0;
+          for (let i = data.indexOf(NEEDLE); i >= 0; i = data.indexOf(NEEDLE, from)) {
+            parts.push(data.subarray(from, i));
+            from = data.indexOf(0x22, i + NEEDLE.length) + 1;
+          }
+          if (parts.length) data = Buffer.concat([...parts, data.subarray(from)]);
+        }
+        const entry = new ZipDeflate(name, { level: 1 });
+        out.add(entry);
+        entry.push(data, true);
+      }
+      out.end();
+    } finally {
+      fs.closeSync(fd);
+    }
+    return true;
+  } finally {
+    zip.close();
+  }
+}
+
+async function runSlicer(file: string, timeoutMs: number): Promise<SliceStats> {
   const s = requireSlicer();
   const out = fs.mkdtempSync(path.join(sliceDir(), "slice-"));
   try {

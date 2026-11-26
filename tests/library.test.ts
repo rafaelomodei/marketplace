@@ -573,6 +573,45 @@ describe("library background work", () => {
     expect(fs.readdirSync(pics).filter((f) => f.endsWith("-render.png"))).toHaveLength(1);
   });
 
+  it("slices models with painted colours again without the painting when the slicer crashes on them", async () => {
+    const { setSlicerSettings, sliceFile, withoutColorPainting } = await import("@/lib/slicer");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "paint-slicer-"));
+    const fake = path.join(dir, "CrealityPrint-fake.sh");
+    // Like Creality Print: crashes on painted triangles (the model is stored uncompressed, so grep sees it).
+    fs.writeFileSync(fake, [
+      "#!/bin/sh",
+      `if grep -q paint_color "$5"; then echo 'terminate called after throwing an instance of boost::filesystem::filesystem_error "/log"' >&2; exit 134; fi`,
+      `printf '; filament used [g] = 20, 0\\n; estimated printing time (normal mode) = 1h 0m 0s\\n; filament_type = PLA;PLA\\n; printer_settings_id = Creality Ender-3 V3 0.4 nozzle\\n' > "$4/plate_1.gcode"`,
+    ].join("\n"));
+    fs.chmodSync(fake, 0o755);
+    const painted = path.join(dir, "estabulo.3mf");
+    const mesh = '<model><resources><object id="1"><mesh><triangles><triangle v1="0" v2="1" v3="2" paint_color="8"/><triangle v1="0" v2="2" v3="3" paint_color="0C"/></triangles></mesh></object></resources></model>';
+    fs.writeFileSync(painted, zipSync({ "3D/Objects/object_1.model": [strToU8(mesh), { level: 0 }], "Metadata/plate_1.png": strToU8("png") }));
+    await lib.whenIdle(); // files of earlier tests must not reach the fake slicer
+    setSlicerSettings({ path: fake });
+    try {
+      const stats = await sliceFile(painted);
+      expect(stats).toMatchObject({ paintIgnored: true, grams: [20, 0], seconds: 3600 });
+      // the copy keeps everything but the painting, and nothing is left behind
+      const copy = path.join(dir, "copia.3mf");
+      expect(withoutColorPainting(painted, copy)).toBe(true);
+      const zip = new Zip(copy);
+      expect(zip.text("3D/Objects/object_1.model")).toBe(mesh.replaceAll(/ paint_color="[^"]*"/g, ""));
+      expect(zip.text("Metadata/plate_1.png")).toBe("png");
+      zip.close();
+      expect(fs.readdirSync(path.join(process.env.STUDIO_ROOT!, "data", "slicing"))).toEqual([]);
+      // a plain model is not copied; a crash on it says so in plain words
+      const plain = path.join(dir, "liso.3mf");
+      fs.writeFileSync(plain, zipSync({ "3D/Objects/object_1.model": [strToU8(mesh.replaceAll("paint_color", "x")), { level: 0 }] }));
+      expect(withoutColorPainting(plain, path.join(dir, "nada.3mf"))).toBe(false);
+      expect(fs.existsSync(path.join(dir, "nada.3mf"))).toBe(false);
+      fs.writeFileSync(fake, `#!/bin/sh\necho 'terminate called "/log"' >&2\nexit 134\n`);
+      await expect(sliceFile(plain)).rejects.toThrow(/travou ao fatiar/);
+    } finally {
+      setSlicerSettings({ path: "" });
+    }
+  });
+
   it("slices one file at a time, on disk, and computes the cost", async () => {
     const { setSlicerSettings } = await import("@/lib/slicer");
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fake-slicer-"));
