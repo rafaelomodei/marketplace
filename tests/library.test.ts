@@ -264,3 +264,115 @@ describe("library ↔ image studio", () => {
   });
 });
 
+
+describe("product variations", () => {
+  const ender = "Creality Ender-3 V3 0.4 nozzle";
+  /** A ready file already sliced, as listFiles would return it. */
+  const done = (rel: string, grams: number, seconds: number, printer = ender, units = 1) => {
+    const meta = lib.projectMetaSchema.parse({ name: "x", laborMinutes: 3, extras: [{ name: "Caixa", quantity: 1, unitCost: 2 }] });
+    const cost = computeCost({ grams: [grams], types: ["PLA"], costPerKg: [0], seconds, printer, extras: meta.extras, laborMinutes: 3, units }, settings);
+    return {
+      rel, name: rel.split("/")[1], folder: "print", type: "3mf", size: 1, modifiedAt: "", info: null, measure: { pieces: 1, size: { width: 50, depth: 50, height: 148 } },
+      units: { count: units, source: "default" }, standardBase: "", standardName: true,
+      slice: { status: "done", slicedAt: "", cost, stats: { plate: 1, grams: [grams], seconds, printer, filaments: [{ type: "PLA", color: "#fff", settingsId: "", costPerKg: 0 }] } },
+    } as unknown as import("@/lib/library").LibraryFile;
+  };
+
+  it("adds parts printed apart, counting labour and extras once; colours change the filament cost", async () => {
+    const { combineCosts, colorSurcharge } = await import("@/lib/costing");
+    const body = done("fatiados/corpo.3mf", 100, 3600);
+    const base = done("fatiados/base.3mf", 20, 1800);
+    const c = combineCosts([body, base].map((f) => (f.slice as { cost: import("@/lib/costing").CostBreakdown }).cost), settings);
+    const b = (body.slice as { cost: import("@/lib/costing").CostBreakdown }).cost;
+    expect(c.material).toBeCloseTo(12 + 2.4, 2);
+    expect(c.labor).toBe(b.labor);
+    expect(c.extras).toBe(2);
+    expect(c.total).toBeCloseTo(c.material + c.energy + c.machine + c.labor + c.extras, 2);
+    expect(c.price).toBeCloseTo(c.total / (1 - settings.margin), 1);
+    // 120 g in a R$ 180 roll instead of R$ 120 → R$ 7,20 more; a cheaper roll lowers it
+    expect(colorSurcharge([100, 20], [120, 120], 180, settings)).toBe(7.2);
+    expect(colorSurcharge([100], [120], 100, settings)).toBe(-2);
+  });
+
+  it("computes cost per variation: parts summed, other printers as alternatives, price per colour", () => {
+    const files = [
+      done("fatiados/vaso10_Ender3V3.3mf", 40, 3600),
+      done("fatiados/vaso15_Ender3V3.3mf", 110, 9000),
+      done("fatiados/vaso15_K1Max.3mf", 105, 5000, "Creality K1 Max 0.4 nozzle"),
+      done("fatiados/baseRedonda_Ender3V3.3mf", 15, 1200),
+    ];
+    const meta = lib.projectMetaSchema.parse({
+      name: "Vaso",
+      laborMinutes: 3,
+      extras: [{ name: "Caixa", quantity: 1, unitCost: 2 }],
+      colors: [{ name: "Dourado seda", perKg: 180 }, { name: "Branco" }],
+      variations: [
+        { id: "10-cm", title: "10 cm", files: ["fatiados/vaso10_Ender3V3.3mf"] },
+        { id: "15-cm", title: "15 cm", files: ["fatiados/vaso15_Ender3V3.3mf", "fatiados/vaso15_K1Max.3mf"] },
+        { id: "10-cm-base", title: "10 cm base redonda", files: ["fatiados/vaso10_Ender3V3.3mf", "fatiados/baseRedonda_Ender3V3.3mf"] },
+        { id: "vazia", title: "Nova" },
+      ],
+    });
+    const [small, big, withBase, empty] = lib.variationViews(meta, files, settings);
+    const plain = (f: (typeof files)[number]) => (f.slice as { cost: import("@/lib/costing").CostBreakdown }).cost;
+    expect(small).toMatchObject({ status: "done", grams: 40, seconds: 3600, measured: { height: 148 } });
+    expect(small.cost?.total).toBe(plain(files[0]).total);
+    expect(big.options.map((o) => o.printer)).toEqual(["Ender-3 V3", "Creality K1 Max"]);
+    expect(big.cost?.total).toBe(plain(files[1]).total);
+    expect(withBase.grams).toBe(55);
+    expect(withBase.measured).toBeNull();
+    expect(withBase.cost!.total).toBeCloseTo(plain(files[0]).total + plain(files[3]).total - plain(files[3]).labor - plain(files[3]).extras, 1);
+    // only colours with their own roll price; 40 g × (180 − 120) / 1000 = R$ 2,40 more
+    expect(small.colors).toEqual([{ name: "Dourado seda", perKg: 180, surcharge: 2.4, total: expect.closeTo(small.cost!.total + 2.4, 2), price: expect.any(Number) }]);
+    expect(small.colors[0].price).toBeGreaterThan(small.cost!.price);
+    expect(empty).toMatchObject({ status: "empty", cost: null, colors: [] });
+  });
+
+  it("adds, edits and removes variations; files follow renames and the trash", async () => {
+    const slug = lib.createProject("Luminária lua");
+    const dir = path.join(process.env.STUDIO_LIBRARY!, slug);
+    fs.writeFileSync(path.join(dir, "fatiados", "lua 10.3mf"), await threeMf(true));
+    fs.writeFileSync(path.join(dir, "fatiados", "lua 15.3mf"), await threeMf(true));
+    lib.updateProject(slug, { salePrices: [{ quantity: 1, price: 39.9 }] });
+    // older projects have no variations: a single product
+    expect(lib.getProject(slug)).toMatchObject({ variations: [], colors: [] });
+    expect(lib.getProject(slug).single).toMatchObject({ id: "unico", files: ["fatiados/lua 10.3mf"] });
+
+    const first = lib.addVariation(slug, { title: "10 cm", files: ["fatiados/lua 10.3mf"] });
+    expect(first).toMatchObject({ id: "10-cm", size: "10 cm", feature: "", salePrices: [{ quantity: 1, price: 39.9 }] });
+    const second = lib.addVariation(slug, { title: "15cm base redonda", files: ["fatiados/lua 15.3mf"] });
+    expect(second).toMatchObject({ id: "15cm-base-redonda", size: "15 cm", feature: "Base redonda", salePrices: [] });
+    expect(lib.addVariation(slug, { title: "10 cm" }).id).toBe("10-cm-2");
+    expect(() => lib.addVariation(slug, { title: "x", files: ["fatiados/nao-existe.3mf"] })).toThrow();
+    expect(lib.getProject(slug).single).toBeNull();
+
+    // a new title refreshes labels derived from it, but not ones set by hand
+    expect(lib.updateVariation(slug, "15cm-base-redonda", { title: "20 cm base quadrada" })).toMatchObject({ id: "15cm-base-redonda", size: "20 cm", feature: "Base quadrada" });
+    lib.updateVariation(slug, "10-cm", { feature: "Lisa" });
+    expect(lib.updateVariation(slug, "10-cm", { title: "12 cm" })).toMatchObject({ size: "12 cm", feature: "Lisa" });
+    lib.updateVariation(slug, "10-cm", { files: ["fatiados/lua 10.3mf", "fatiados/lua 15.3mf", "fatiados/lua 10.3mf"] });
+    expect(lib.readProjectMeta(slug).variations[0].files).toEqual(["fatiados/lua 10.3mf", "fatiados/lua 15.3mf"]);
+
+    lib.standardizeFileNames(slug);
+    const renamed = lib.readProjectMeta(slug).variations;
+    expect(renamed[0].files.every((f) => f.startsWith("fatiados/luminariaLua_Ender3V3"))).toBe(true);
+    lib.removeProjectFile(slug, renamed[1].files[0]);
+    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([]);
+    expect(lib.readProjectMeta(slug).variations[0].files).toHaveLength(1);
+
+    lib.removeVariation(slug, "10-cm-2");
+    expect(lib.readProjectMeta(slug).variations.map((v) => v.id)).toEqual(["10-cm", "15cm-base-redonda"]);
+    expect(() => lib.removeVariation(slug, "10-cm-2")).toThrow();
+  });
+
+  it("is exposed as actions (MCP tools)", async () => {
+    const { runAction, ACTIONS } = await import("@/lib/actions");
+    const slug = lib.createProject("Porta caneta");
+    const v = await runAction(ACTIONS.add_library_variation, { project: slug, title: "Base hexagonal" });
+    expect(v).toMatchObject({ id: "base-hexagonal", feature: "Base hexagonal" });
+    await runAction(ACTIONS.update_library_project, { project: slug, colors: [{ name: "Glitter", perKg: 160 }] });
+    expect(lib.getProject(slug)).toMatchObject({ colors: [{ name: "Glitter", perKg: 160 }], variations: [{ id: "base-hexagonal", status: "empty" }] });
+    await runAction(ACTIONS.remove_library_variation, { project: slug, variation: "base-hexagonal" });
+    expect(lib.readProjectMeta(slug).variations).toEqual([]);
+  });
+});

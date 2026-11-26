@@ -28,10 +28,12 @@ import { action, reportError } from "@/lib/client/api";
 import type { CostSettings } from "@/lib/costing";
 import type { Project, ProjectMeta } from "@/lib/library";
 import { formatSize } from "@/lib/text";
+import { ColorsEditor } from "./ColorsEditor";
 import { ExtrasEditor } from "./ExtrasEditor";
 import { SalePricesEditor } from "./SalePricesEditor";
 import { SizeEditor } from "./SizeEditor";
 import { StudioSection } from "./StudioSection";
+import { VariationsSection } from "./VariationsSection";
 
 export default function ProjectView({ slug }: { slug: string }) {
   const router = useRouter();
@@ -178,9 +180,26 @@ export default function ProjectView({ slug }: { slug: string }) {
         {ready.length ? ready.map(card) : <p className="text-sm text-ink-muted">Nenhum ainda. Abra um arquivo original no fatiador, configure e salve o projeto (3MF) na pasta <Code>fatiados</Code> deste projeto.</p>}
       </FormSection>
 
-      <FormSection title="Preço de venda" hint="Por objeto montado. Dá para ter preço de kit: 1 un. por R$ 15, 10 un. por R$ 120… O lucro usa o custo por unidade do primeiro arquivo pronto.">
-        <SalePricesEditor tiers={project.salePrices} unitCost={mainCost?.total ?? null} suggested={mainCost?.price ?? null} onSave={(salePrices) => save({ salePrices })} />
+      <FormSection title="Variações" hint="O mesmo produto em outros tamanhos ou com outra parte (ex.: 10 cm e 15 cm, base redonda). Cada uma com seu arquivo, custo e preço.">
+        <VariationsSection slug={slug} variations={project.variations} files={ready} onChanged={reload} />
+        <Disclosure summary={project.colors.length ? `Cores com preço diferente (${project.colors.length})` : "Cores com preço diferente"} defaultOpen={project.colors.length > 0}>
+          <div className="space-y-3">
+            <p className="text-sm text-ink-muted">Para cores de filamento mais caro (seda, glitter, brilha no escuro). Informe o preço do rolo de 1 kg; as cores normais não precisam entrar aqui.</p>
+            <ColorsEditor
+              colors={project.colors}
+              normalPerKg={cost?.filaments[0]?.perKg ?? cost?.filamentPerKg ?? null}
+              preview={project.single?.colors ?? null}
+              onSave={(colors) => save({ colors })}
+            />
+          </div>
+        </Disclosure>
       </FormSection>
+
+      {project.variations.length === 0 && (
+        <FormSection title="Preço de venda" hint="Por objeto montado. Dá para ter preço de kit: 1 un. por R$ 15, 10 un. por R$ 120… O lucro usa o custo por unidade do primeiro arquivo pronto.">
+          <SalePricesEditor tiers={project.salePrices} unitCost={mainCost?.total ?? null} suggested={mainCost?.price ?? null} onSave={(salePrices) => save({ salePrices })} />
+        </FormSection>
+      )}
 
       <FormSection title="Fotos e imagens" hint="Fotos do produto impresso para o estúdio de imagens. O projeto é o mesmo lá: não precisa criar de novo.">
         <StudioSection project={slug} singlePiece={project.object.measured?.pieces === 1} />

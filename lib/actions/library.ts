@@ -3,6 +3,8 @@ import { costSettingsSchema, extraSchema, getCostSettings, setCostSettings } fro
 import { openFolder } from "../export";
 import {
   addProjectFiles,
+  addVariation,
+  colorSchema,
   allCategories,
   archiveProject,
   createProject,
@@ -16,10 +18,12 @@ import {
   projectDir,
   recalculate,
   removeProjectFile,
+  removeVariation,
   setFileUnits,
   salePriceSchema,
   standardizeFileNames,
   updateProject,
+  updateVariation,
 } from "../library";
 import { addModelViews, ensureStudioProduct, libraryFacts, studioSummary } from "../library-studio";
 import { readMeta } from "../products";
@@ -42,7 +46,7 @@ export const listLibraryAction = defineAction({
 export const getLibraryProjectAction = defineAction({
   name: "get_library_project",
   title: "Ver projeto da biblioteca",
-  description: "Dados de um projeto: arquivos originais e fatiados, mesas, impressora, filamentos, gramas, tempo, custo detalhado e preço sugerido de cada 3MF.",
+  description: "Dados de um projeto: arquivos originais e fatiados, mesas, impressora, filamentos, gramas, tempo, custo detalhado e preço sugerido de cada 3MF, e as variações (tamanhos/características) com custo, preço sugerido e preço por cor.",
   input: z.object({ project }),
   readOnly: true,
   run: ({ project }) => getProject(project),
@@ -83,8 +87,54 @@ export const updateLibraryProjectAction = defineAction({
       .optional()
       .describe("Preços de venda do objeto montado por quantidade, ex.: [{quantity:1, price:15}, {quantity:10, price:120}] (preço do lote inteiro). Substitui a lista toda; [] tira os preços"),
     pieces: z.number().int().positive().nullable().optional().describe("Quantas peças impressas formam UM objeto pronto (ex.: foto + moldura + laço = 3); define quantos objetos cada impressão rende"),
+    colors: z
+      .array(colorSchema)
+      .optional()
+      .describe("Cores oferecidas com filamento de preço diferente, ex.: [{name:'Dourado seda', perKg:180}] (perKg = preço do rolo de 1 kg; null = preço normal). Valem para todas as variações. Substitui a lista toda"),
   }),
   run: ({ project, ...patch }) => updateProject(project, patch),
+});
+
+const variation = z.string().min(1).describe("Id da variação (veja variations em get_library_project), ex.: 15-cm");
+const files = z.array(file).describe("Arquivos 3MF do projeto que imprimem esta variação. Vários arquivos da mesma impressora = partes impressas separadas (corpo + base), somadas; arquivos de impressoras diferentes = alternativas");
+
+export const addLibraryVariationAction = defineAction({
+  name: "add_library_variation",
+  title: "Adicionar variação",
+  description: "Cria uma variação do mesmo produto: outro tamanho (\"15 cm\"), outra característica (\"Base redonda\") ou os dois (\"15 cm base redonda\"). Basta título e o(s) arquivo(s) 3MF; tamanho e característica saem do título. O custo e o preço sugerido aparecem em get_library_project → variations.",
+  input: z.object({
+    project,
+    title: z.string().trim().min(1).describe("Nome da variação como o cliente vê, ex.: 15 cm, Base redonda"),
+    files: files.optional(),
+    size: z.string().trim().optional().describe("Rótulo de tamanho para o anúncio (ex.: 15 cm); vazio = sem tamanho"),
+    feature: z.string().trim().optional().describe("O que muda além do tamanho (ex.: Base redonda); vazio = nada"),
+    salePrices: z.array(salePriceSchema).optional().describe("Preços de venda desta variação por quantidade (como em update_library_project)"),
+  }),
+  run: ({ project, ...input }) => addVariation(project, input),
+});
+
+export const updateLibraryVariationAction = defineAction({
+  name: "update_library_variation",
+  title: "Editar variação",
+  description: "Muda título, arquivos, tamanho, característica ou preços de venda de uma variação.",
+  input: z.object({
+    project,
+    variation,
+    title: z.string().trim().min(1).optional(),
+    files: files.optional(),
+    size: z.string().trim().optional(),
+    feature: z.string().trim().optional(),
+    salePrices: z.array(salePriceSchema).optional().describe("Substitui a lista toda; [] tira os preços"),
+  }),
+  run: ({ project, variation, ...patch }) => updateVariation(project, variation, patch),
+});
+
+export const removeLibraryVariationAction = defineAction({
+  name: "remove_library_variation",
+  title: "Tirar variação",
+  description: "Tira uma variação do produto. Os arquivos continuam no projeto.",
+  input: z.object({ project, variation }),
+  run: ({ project, variation }) => removeVariation(project, variation),
 });
 
 export const archiveLibraryProjectAction = defineAction({

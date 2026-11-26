@@ -121,3 +121,38 @@ export function computeCost(input: CostInput, s: CostSettings = getCostSettings(
     printer: printer.name,
   };
 }
+
+/**
+ * Cost of ONE finished object made from several prints (a body and a different base printed apart): adds the
+ * filament, energy and machine of each part (already per object) and counts labour and extras once.
+ * `extraMaterial` is the surcharge of a pricier filament colour (see `colorSurcharge`).
+ */
+export function combineCosts(parts: CostBreakdown[], s: CostSettings = getCostSettings(), extraMaterial = 0): CostBreakdown {
+  if (!parts.length) throw new Error("combineCosts: nenhuma parte");
+  const sum = (k: "material" | "energy" | "machine") => parts.reduce((n, p) => n + p[k], 0);
+  const [material, energy, machine] = [sum("material") + extraMaterial, sum("energy"), sum("machine")];
+  const { labor, extras } = parts[0];
+  const total = material + energy + machine + labor + extras;
+  return {
+    units: 1,
+    printTotal: cents(parts.reduce((n, p) => n + p.printTotal, 0) + extraMaterial),
+    batchTotal: cents(total),
+    material: cents(material),
+    filamentPerKg: parts.flatMap((p) => p.filamentPerKg),
+    energy: cents(energy),
+    labor,
+    machine: cents(machine),
+    extras,
+    total: cents(total),
+    price: cents(total / (1 - s.margin)),
+    printer: parts[0].printer,
+  };
+}
+
+/**
+ * Extra filament cost of printing in a colour whose 1 kg roll costs `perKg` instead of what each slot was priced
+ * at (`slotPerKg`, as in CostBreakdown.filamentPerKg). `grams` are per finished object. Negative = cheaper.
+ */
+export function colorSurcharge(grams: number[], slotPerKg: number[], perKg: number, s: CostSettings = getCostSettings()) {
+  return cents(grams.reduce((n, g, i) => n + (g * (perKg - (slotPerKg[i] ?? perKg))) / 1000, 0) * (1 + s.waste));
+}

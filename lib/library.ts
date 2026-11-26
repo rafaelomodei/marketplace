@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { computeCost, extraSchema, getCostSettings, type CostBreakdown } from "./costing";
+import { colorSurcharge, combineCosts, computeCost, type CostBreakdown, type CostSettings, extraSchema, getCostSettings } from "./costing";
 import { DATA_DIR, DOWNLOADS_DIR, LIBRARY_DIR } from "./paths";
 import { type Dimensions, inspect3mf, type Measure, measureModel, MODEL_EXT, plateImage, renderPreview, stlTriangles, threeMfTriangles, type ThreeMfInfo } from "./print-files";
 import { HttpError } from "./products";
@@ -34,6 +34,34 @@ export const salePriceSchema = z.object({
 });
 export type SalePrice = z.infer<typeof salePriceSchema>;
 
+/** Price tiers kept one per quantity, sorted by quantity. */
+const salePricesSchema = z.array(salePriceSchema).default([])
+  .transform((tiers) => [...new Map(tiers.map((t) => [t.quantity, t])).values()].sort((a, b) => a.quantity - b.quantity));
+
+/**
+ * A version of the same product sold side by side: another size (10 cm, 15 cm) and/or another feature (a different
+ * base). Each points to the project files that print it — several files are parts printed apart (body + base) and
+ * are added up; files for different printers are alternatives. Size and feature combine freely ("15 cm · base redonda").
+ */
+export const variationSchema = z.object({
+  /** Stable id (made from the first title), used by actions. */
+  id: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  /** Size label for marketplaces ("10 cm"); empty = none. Filled from the title when it has a measure. */
+  size: z.string().trim().default(""),
+  /** What else changes ("Base redonda"); empty = none. */
+  feature: z.string().trim().default(""),
+  /** Paths of the 3MF files (fatiados/…) that print this variation. */
+  files: z.array(z.string().min(1)).default([]),
+  /** Own sale prices of this variation (same shape as the project's); empty = not priced yet. */
+  salePrices: salePricesSchema,
+});
+export type Variation = z.infer<typeof variationSchema>;
+
+/** A colour on offer whose filament costs something else: perKg = price of its 1 kg roll (null = the normal price). */
+export const colorSchema = z.object({ name: z.string().trim().min(1), perKg: z.number().nonnegative().nullable().default(null) });
+export type ColorOption = z.infer<typeof colorSchema>;
+
 export const projectMetaSchema = z.object({
   name: z.string().trim().min(1),
   categories: z.array(z.string().trim().min(1)).default([]),
@@ -50,8 +78,12 @@ export const projectMetaSchema = z.object({
    */
   salePrices: z.preprocess(
     (v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.values(v).slice(0, 1).map((price) => ({ quantity: 1, price })) : v),
-    z.array(salePriceSchema).default([]),
-  ).transform((tiers) => [...new Map(tiers.map((t) => [t.quantity, t])).values()].sort((a, b) => a.quantity - b.quantity)),
+    salePricesSchema,
+  ),
+  /** Sizes/features of the same product (see Variation). Empty = a single product, as in older projects. */
+  variations: z.array(variationSchema).default([]),
+  /** Colours that cost more (or less) than the normal filament; they combine with every variation. */
+  colors: z.array(colorSchema).default([]),
   /** Size of the finished object in mm, informed by hand (needed when the model has several pieces). */
   size: z.object({ width: z.number().positive(), depth: z.number().positive(), height: z.number().positive() }).nullable().default(null),
   /** How many printed pieces form ONE finished object, informed by hand (an ornament = photo + frame + bow = 3). */
@@ -272,6 +304,7 @@ function relocate(slug: string, rel: string, sub: string, name: string): string 
   updateProject(slug, {
     cover: meta.cover?.file === rel ? { ...meta.cover, file: next } : meta.cover,
     yields: units ? { ...yields, [next]: units } : yields,
+    variations: meta.variations.map((v) => ({ ...v, files: v.files.map((f) => (f === rel ? next : f)) })),
   });
   return next;
 }
@@ -300,7 +333,11 @@ export function removeProjectFile(slug: string, rel: string) {
   fs.renameSync(abs, path.join(trash, freeName(trash, path.basename(abs))));
   const meta = readProjectMeta(slug);
   const { [rel]: _, ...yields } = meta.yields;
-  updateProject(slug, { cover: meta.cover?.file === rel ? null : meta.cover, yields });
+  updateProject(slug, {
+    cover: meta.cover?.file === rel ? null : meta.cover,
+    yields,
+    variations: meta.variations.map((v) => ({ ...v, files: v.files.filter((f) => f !== rel) })),
+  });
   return { ok: true };
 }
 
@@ -409,6 +446,147 @@ export function recalculate(slug: string, rel: string) {
   return sliceState(slug, rel, entry, readProjectMeta(slug));
 }
 
+// --------------------------------------------------------------------------------------------------- variations
+
+/** "15 cm base redonda" → size "15 cm", feature "Base redonda"; "Base quadrada" → feature only. */
+export function splitVariationTitle(title: string): { size: string; feature: string } {
+  const m = title.match(/(\d+(?:[.,]\d+)?)\s*(mm|cm|m)\b/i);
+  const size = m ? `${m[1]} ${m[2].toLowerCase()}` : "";
+  const rest = (m ? title.replace(m[0], " ") : title).replace(/^[\s·\-–,/|]+|[\s·\-–,/|]+$/g, "").replace(/\s+/g, " ").trim();
+  return { size, feature: rest ? rest[0].toUpperCase() + rest.slice(1) : "" };
+}
+
+function checkFiles(slug: string, files: string[]) {
+  for (const f of files) if (!fs.existsSync(projectFile(slug, f))) throw new HttpError(400, `Arquivo não encontrado no projeto: ${f}`);
+  return [...new Set(files)];
+}
+
+function findVariation(meta: ProjectMeta, id: string) {
+  const v = meta.variations.find((x) => x.id === id);
+  if (!v) throw new HttpError(404, `Variação não encontrada: ${id}`);
+  return v;
+}
+
+/** Adds a variation (title + the file(s) that print it). Size and feature come from the title unless given. */
+export function addVariation(slug: string, input: { title: string; files?: string[]; size?: string; feature?: string; salePrices?: SalePrice[] }): Variation {
+  const meta = readProjectMeta(slug);
+  const title = input.title.trim();
+  if (!title) throw new HttpError(400, "Dê um nome para a variação");
+  const base = slugify(title) || "variacao";
+  let id = base;
+  for (let i = 2; meta.variations.some((v) => v.id === id); i++) id = `${base}-${i}`;
+  const split = splitVariationTitle(title);
+  const variation = variationSchema.parse({
+    id,
+    title,
+    size: input.size ?? split.size,
+    feature: input.feature ?? split.feature,
+    files: checkFiles(slug, input.files ?? []),
+    // The first variation is usually the original product: it keeps the prices already set for it.
+    salePrices: input.salePrices ?? (meta.variations.length ? [] : meta.salePrices),
+  });
+  updateProject(slug, { variations: [...meta.variations, variation] });
+  return variation;
+}
+
+/** Changes a variation. A new title also refreshes size/feature that were derived from the old one. */
+export function updateVariation(slug: string, id: string, patch: Partial<Omit<Variation, "id">>): Variation {
+  const meta = readProjectMeta(slug);
+  const old = findVariation(meta, id);
+  const next = { ...old, ...patch };
+  if (patch.title !== undefined) {
+    const before = splitVariationTitle(old.title);
+    const after = splitVariationTitle(patch.title);
+    if (patch.size === undefined && old.size === before.size) next.size = after.size;
+    if (patch.feature === undefined && old.feature === before.feature) next.feature = after.feature;
+  }
+  if (patch.files) next.files = checkFiles(slug, patch.files);
+  const variation = variationSchema.parse(next);
+  updateProject(slug, { variations: meta.variations.map((v) => (v.id === id ? variation : v)) });
+  return variation;
+}
+
+export function removeVariation(slug: string, id: string) {
+  const meta = readProjectMeta(slug);
+  findVariation(meta, id);
+  updateProject(slug, { variations: meta.variations.filter((v) => v.id !== id) });
+  return { ok: true };
+}
+
+/** Cost of a variation on one printer: its parts added up (see combineCosts). */
+export type VariationOption = {
+  printer: string;
+  files: string[];
+  /** null while any part is not calculated yet. */
+  cost: CostBreakdown | null;
+  /** Filament per finished object, all parts. */
+  grams: number | null;
+  /** Printing time of all parts (whole prints). */
+  seconds: number | null;
+};
+
+export type VariationView = Variation & {
+  /** done = has a cost; calculating = slicing; waiting = a file is not ready (not configured, failed…); empty = no file. */
+  status: "done" | "calculating" | "waiting" | "empty";
+  /** One per printer the files are set up for; the first is the main one. */
+  options: VariationOption[];
+  /** The main option's cost per finished object (normal colour). */
+  cost: CostBreakdown | null;
+  grams: number | null;
+  seconds: number | null;
+  /** Size measured in the model when the variation is a single one-piece file. */
+  measured: Dimensions | null;
+  /** Cost and suggested price in each colour that has its own filament price. */
+  colors: { name: string; perKg: number; surcharge: number; total: number; price: number }[];
+};
+
+const printerName = (f: LibraryFile) =>
+  (f.slice?.status === "done" ? f.slice.cost.printer : f.info?.printer?.replace(/\s*\d+(\.\d+)?\s*nozzle$/i, "")) || "Outra impressora";
+
+export function variationViews(meta: ProjectMeta, files: LibraryFile[], s: CostSettings = getCostSettings()): VariationView[] {
+  const byRel = new Map(files.map((f) => [f.rel, f]));
+  return meta.variations.map((v) => {
+    const own = v.files.map((rel) => byRel.get(rel)).filter((f): f is LibraryFile => !!f);
+    const groups = new Map<string, LibraryFile[]>();
+    for (const f of own) groups.set(printerName(f), [...(groups.get(printerName(f)) ?? []), f]);
+    const options = [...groups].map(([printer, parts]): VariationOption => {
+      const done = parts.map((f) => (f.slice?.status === "done" ? f.slice : null));
+      if (done.some((d) => !d)) return { printer, files: parts.map((f) => f.rel), cost: null, grams: null, seconds: null };
+      const slices = done as Extract<SliceState, { status: "done" }>[];
+      return {
+        printer,
+        files: parts.map((f) => f.rel),
+        cost: combineCosts(slices.map((d) => d.cost), s),
+        grams: Math.round(slices.reduce((n, d) => n + d.stats.grams.reduce((a, b) => a + b, 0) / d.cost.units, 0) * 10) / 10,
+        seconds: slices.reduce((n, d) => n + d.stats.seconds, 0),
+      };
+    });
+    const main = options.find((o) => o.cost) ?? null;
+    const status: VariationView["status"] = !own.length ? "empty"
+      : main ? "done"
+      : own.some((f) => f.slice?.status === "queued" || f.slice?.status === "running") ? "calculating"
+      : "waiting";
+    const parts = main ? main.files.map((rel) => byRel.get(rel)!.slice as Extract<SliceState, { status: "done" }>) : [];
+    const colors = main
+      ? meta.colors.flatMap((c) => {
+          if (c.perKg === null) return [];
+          const surcharge = Math.round(parts.reduce((n, d) => n + colorSurcharge(d.stats.grams.map((g) => g / d.cost.units), d.cost.filamentPerKg, c.perKg!, s), 0) * 100) / 100;
+          const cost = combineCosts(parts.map((d) => d.cost), s, surcharge);
+          return [{ name: c.name, perKg: c.perKg, surcharge, total: cost.total, price: cost.price }];
+        })
+      : [];
+    const single = own.length === 1 && own[0].measure?.pieces === 1 ? own[0].measure.size : null;
+    return { ...v, status, options, cost: main?.cost ?? null, grams: main?.grams ?? null, seconds: main?.seconds ?? null, measured: single, colors };
+  });
+}
+
+/** A project without variations seen as one variation of its first ready file (for colour prices). */
+function singleView(meta: ProjectMeta, files: LibraryFile[]): VariationView | null {
+  const first = files.find((f) => f.folder === "print" && f.info?.configured);
+  if (meta.variations.length || !first) return null;
+  return variationViews({ ...meta, variations: [variationSchema.parse({ id: "unico", title: meta.name, files: [first.rel] })] }, files)[0];
+}
+
 // ------------------------------------------------------------------------------------------------------ reading
 
 function listFiles(slug: string, meta: ProjectMeta): LibraryFile[] {
@@ -467,7 +645,7 @@ export function getProject(slug: string) {
   const meta = readProjectMeta(slug);
   const files = listFiles(slug, meta);
   const cover = coverOf(meta, files);
-  return { slug, ...meta, cover, files, object: objectSize(meta, files, cover), folder: projectDir(slug) };
+  return { slug, ...meta, cover, files, object: objectSize(meta, files, cover), variations: variationViews(meta, files), single: singleView(meta, files), folder: projectDir(slug) };
 }
 export type Project = ReturnType<typeof getProject>;
 
