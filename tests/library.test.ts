@@ -396,23 +396,29 @@ describe("product variations", () => {
     fs.writeFileSync(path.join(dir, "fatiados", "lua 10.3mf"), await threeMf(true));
     fs.writeFileSync(path.join(dir, "fatiados", "lua 15.3mf"), await threeMf(true));
     lib.updateProject(slug, { salePrices: [{ quantity: 1, price: 39.9 }] });
-    // older projects have no variations: a single product
-    expect(lib.getProject(slug)).toMatchObject({ variations: [], colors: [] });
-    expect(lib.getProject(slug).single).toMatchObject({ id: "unico", files: ["fatiados/lua 10.3mf"] });
+    // every product is at least one variation: the main one, with the project's prices and one file per printer
+    const main = lib.getProject(slug);
+    expect(main.variations).toMatchObject([{ id: "principal", title: "Principal", files: ["fatiados/lua 10.3mf"], salePrices: [{ quantity: 1, price: 39.9 }] }]);
+    expect(main.loose).toEqual(["fatiados/lua 15.3mf"]);
+    expect(() => lib.removeVariation(slug, "principal")).toThrow(/pelo menos uma/);
+    // the main variation's prices are the project's prices, both ways
+    lib.updateVariation(slug, "principal", { salePrices: [{ quantity: 1, price: 42 }] });
+    expect(lib.readProjectMeta(slug).salePrices).toEqual([{ quantity: 1, price: 42 }]);
+    lib.updateProject(slug, { salePrices: [{ quantity: 1, price: 39.9 }] });
+    expect(lib.readProjectMeta(slug).variations[0].salePrices).toEqual([{ quantity: 1, price: 39.9 }]);
 
-    const first = lib.addVariation(slug, { title: "10 cm", files: ["fatiados/lua 10.3mf"] });
-    expect(first).toMatchObject({ id: "10-cm", size: "10 cm", feature: "", salePrices: [{ quantity: 1, price: 39.9 }] });
     const second = lib.addVariation(slug, { title: "15cm base redonda", files: ["fatiados/lua 15.3mf"] });
     expect(second).toMatchObject({ id: "15cm-base-redonda", size: "15 cm", feature: "Base redonda", salePrices: [] });
+    expect(lib.addVariation(slug, { title: "10 cm" }).id).toBe("10-cm");
     expect(lib.addVariation(slug, { title: "10 cm" }).id).toBe("10-cm-2");
     expect(() => lib.addVariation(slug, { title: "x", files: ["fatiados/nao-existe.3mf"] })).toThrow();
-    expect(lib.getProject(slug).single).toBeNull();
+    expect(lib.getProject(slug).loose).toEqual([]);
 
     // a new title refreshes labels derived from it, but not ones set by hand
     expect(lib.updateVariation(slug, "15cm-base-redonda", { title: "20 cm base quadrada" })).toMatchObject({ id: "15cm-base-redonda", size: "20 cm", feature: "Base quadrada" });
-    lib.updateVariation(slug, "10-cm", { feature: "Lisa" });
-    expect(lib.updateVariation(slug, "10-cm", { title: "12 cm" })).toMatchObject({ size: "12 cm", feature: "Lisa" });
-    lib.updateVariation(slug, "10-cm", { files: ["fatiados/lua 10.3mf", "fatiados/lua 15.3mf", "fatiados/lua 10.3mf"] });
+    lib.updateVariation(slug, "principal", { feature: "Lisa" });
+    expect(lib.updateVariation(slug, "principal", { title: "12 cm" })).toMatchObject({ size: "12 cm", feature: "Lisa" });
+    lib.updateVariation(slug, "principal", { files: ["fatiados/lua 10.3mf", "fatiados/lua 15.3mf", "fatiados/lua 10.3mf"] });
     expect(lib.readProjectMeta(slug).variations[0].files).toEqual(["fatiados/lua 10.3mf", "fatiados/lua 15.3mf"]);
 
     lib.standardizeFileNames(slug);
@@ -423,8 +429,27 @@ describe("product variations", () => {
     expect(lib.readProjectMeta(slug).variations[0].files).toHaveLength(1);
 
     lib.removeVariation(slug, "10-cm-2");
-    expect(lib.readProjectMeta(slug).variations.map((v) => v.id)).toEqual(["10-cm", "15cm-base-redonda"]);
+    expect(lib.readProjectMeta(slug).variations.map((v) => v.id)).toEqual(["principal", "15cm-base-redonda", "10-cm"]);
     expect(() => lib.removeVariation(slug, "10-cm-2")).toThrow();
+  });
+
+  it("puts uploaded 3MF in the variation they print", async () => {
+    const slug = lib.createProject("Vaso onda");
+    const [first] = lib.addProjectFiles(slug, [{ name: "a.3mf", data: await threeMf(true) }]);
+    // a new product: the first ready file is the main variation's
+    expect(lib.readProjectMeta(slug).variations).toMatchObject([{ id: "principal", files: [first] }]);
+    // same printer again, no variation said: it could be another size, so it waits to be placed
+    const [loose] = lib.addProjectFiles(slug, [{ name: "b.3mf", data: await threeMf(true) }]);
+    expect(lib.getProject(slug).loose).toEqual([loose]);
+    const big = lib.addVariation(slug, { title: "20 cm" });
+    const [third] = lib.addProjectFiles(slug, [{ name: "c.3mf", data: await threeMf(true) }], undefined, big.id);
+    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([third]);
+    // originals never join a variation
+    lib.addProjectFiles(slug, [{ name: "d.stl", data: stl() }], undefined, big.id);
+    expect(lib.readProjectMeta(slug).variations[1].files).toEqual([third]);
+    const data = await threeMf(true);
+    expect(() => lib.addProjectFiles(slug, [{ name: "e.3mf", data }], undefined, "nada")).toThrow(/não encontrada/);
+    await lib.whenIdle(); // leave nothing queued for the next tests
   });
 
   it("is exposed as actions (MCP tools)", async () => {
@@ -433,9 +458,9 @@ describe("product variations", () => {
     const v = await runAction(ACTIONS.add_library_variation, { project: slug, title: "Base hexagonal" });
     expect(v).toMatchObject({ id: "base-hexagonal", feature: "Base hexagonal" });
     await runAction(ACTIONS.update_library_project, { project: slug, colors: [{ name: "Glitter", perKg: 160 }] });
-    expect(lib.getProject(slug)).toMatchObject({ colors: [{ name: "Glitter", perKg: 160 }], variations: [{ id: "base-hexagonal", status: "empty" }] });
+    expect(lib.getProject(slug)).toMatchObject({ colors: [{ name: "Glitter", perKg: 160 }], variations: [{ id: "principal" }, { id: "base-hexagonal", status: "empty" }] });
     await runAction(ACTIONS.remove_library_variation, { project: slug, variation: "base-hexagonal" });
-    expect(lib.readProjectMeta(slug).variations).toEqual([]);
+    expect(lib.readProjectMeta(slug).variations.map((x) => x.id)).toEqual(["principal"]);
   });
 });
 

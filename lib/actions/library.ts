@@ -179,10 +179,11 @@ export const addLibraryFilesAction = defineAction({
   input: z.object({
     project,
     folder: folder.optional(),
+    variation: z.string().min(1).optional().describe("Id da variação que estes 3MF imprimem (ex.: principal). Sem ela, entram na variação única do produto."),
     files: z.array(z.object({ name: z.string().min(1), data: z.union([z.string().describe("Conteúdo em base64"), z.instanceof(Uint8Array)]) })).min(1),
   }),
-  run: ({ project, folder, files }) => ({
-    saved: addProjectFiles(project, files.map((f) => ({ name: f.name, data: typeof f.data === "string" ? Buffer.from(f.data, "base64") : f.data })), folder),
+  run: ({ project, folder, variation, files }) => ({
+    saved: addProjectFiles(project, files.map((f) => ({ name: f.name, data: typeof f.data === "string" ? Buffer.from(f.data, "base64") : f.data })), folder, variation),
   }),
 });
 

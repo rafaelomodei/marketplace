@@ -258,7 +258,12 @@ export function createProject(name: string, patch: Partial<ProjectMeta> = {}): s
 }
 
 export function updateProject(slug: string, patch: Partial<ProjectMeta>): ProjectMeta {
-  const meta = projectMetaSchema.parse({ ...readProjectMeta(slug), ...patch });
+  const current = readProjectMeta(slug);
+  // The main (first) variation is the product itself: its prices are the project's prices, both ways.
+  if (patch.salePrices && !patch.variations && current.variations.length)
+    patch = { ...patch, variations: current.variations.map((v, i) => (i === 0 ? { ...v, salePrices: patch.salePrices! } : v)) };
+  const meta = projectMetaSchema.parse({ ...current, ...patch });
+  if (meta.variations.length) meta.salePrices = meta.variations[0].salePrices;
   writeJson(path.join(projectDir(slug), "projeto.json"), meta);
   return meta;
 }
@@ -292,18 +297,37 @@ export function classify(name: string, data: Uint8Array): FolderKind {
 }
 
 /** Saves files into a project, named by the library pattern (project name + printer). */
-export function addProjectFiles(slug: string, files: { name: string; data: Uint8Array }[], folder?: FolderKind): string[] {
+/**
+ * Saves STL/3MF files in a project. Ready-to-print 3MF join `variation` when given; otherwise, while the product has
+ * a single variation, they join it unless it already prints on that printer (then they stay loose, to be placed).
+ */
+export function addProjectFiles(slug: string, files: { name: string; data: Uint8Array }[], folder?: FolderKind, variation?: string): string[] {
   const dir = projectDir(slug);
-  const meta = readProjectMeta(slug);
-  return files.map((f) => {
+  const meta = ensureVariations(slug);
+  if (variation) findVariation(meta, variation);
+  const ready: { rel: string; printer: string }[] = [];
+  const saved = files.map((f) => {
     if (!MODEL_EXT.test(f.name)) throw new HttpError(400, `Formato não suportado: ${f.name} (use STL ou 3MF)`);
     const info = infoOf(f.name, f.data);
-    const target = path.join(dir, FOLDERS[folder ?? (info?.configured ? "print" : "source")]);
+    const kind = folder ?? (info?.configured ? "print" : "source");
+    const target = path.join(dir, FOLDERS[kind]);
     fs.mkdirSync(target, { recursive: true });
     const name = freeName(target, `${standardFileBase(meta.name, info?.printer ?? null)}${path.extname(f.name).toLowerCase()}`);
     fs.writeFileSync(path.join(target, name), f.data);
-    return path.posix.join(path.basename(target), name);
+    const rel = path.posix.join(path.basename(target), name);
+    if (kind === "print" && info?.configured) ready.push({ rel, printer: info.printer ?? "" });
+    return rel;
   });
+  if (ready.length) {
+    const target = variation ?? (meta.variations.length === 1 ? meta.variations[0].id : null);
+    if (target) {
+      const v = findVariation(meta, target);
+      const printers = new Set(v.files.filter((rel) => fs.existsSync(projectFile(slug, rel))).map((rel) => { const abs = projectFile(slug, rel); return fileInfo(slug, rel, abs, fs.statSync(abs)).info?.printer ?? ""; }));
+      const join = variation ? ready.map((r) => r.rel) : ready.filter((r) => !printers.has(r.printer) && (printers.add(r.printer), true)).map((r) => r.rel);
+      if (join.length) updateProject(slug, { variations: meta.variations.map((x) => (x.id === target ? { ...x, files: [...x.files, ...join] } : x)) });
+    }
+  }
+  return saved;
 }
 
 /**
@@ -522,7 +546,7 @@ function findVariation(meta: ProjectMeta, id: string) {
 
 /** Adds a variation (title + the file(s) that print it). Size and feature come from the title unless given. */
 export function addVariation(slug: string, input: { title: string; files?: string[]; size?: string; feature?: string; salePrices?: SalePrice[] }): Variation {
-  const meta = readProjectMeta(slug);
+  const meta = ensureVariations(slug);
   const title = input.title.trim();
   if (!title) throw new HttpError(400, "Dê um nome para a variação");
   const base = slugify(title) || "variacao";
@@ -562,6 +586,7 @@ export function updateVariation(slug: string, id: string, patch: Partial<Omit<Va
 export function removeVariation(slug: string, id: string) {
   const meta = readProjectMeta(slug);
   findVariation(meta, id);
+  if (meta.variations.length === 1) throw new HttpError(400, "O produto precisa de pelo menos uma variação");
   updateProject(slug, { variations: meta.variations.filter((v) => v.id !== id) });
   return { ok: true };
 }
@@ -633,11 +658,22 @@ export function variationViews(meta: ProjectMeta, files: LibraryFile[], s: CostS
   });
 }
 
-/** A project without variations seen as one variation of its first ready file (for colour prices). */
-function singleView(meta: ProjectMeta, files: LibraryFile[]): VariationView | null {
-  const first = files.find((f) => f.folder === "print" && f.info?.configured);
-  if (meta.variations.length || !first) return null;
-  return variationViews({ ...meta, variations: [variationSchema.parse({ id: "unico", title: meta.name, files: [first.rel] })] }, files)[0];
+export const MAIN_VARIATION = "principal";
+
+/**
+ * Every product is at least one variation: the main one. Projects from before variations (or brand new ones) get it
+ * here, with the project's prices and its ready files — one per printer, since files of the same printer would add
+ * up as parts.
+ */
+export function ensureVariations(slug: string, files?: LibraryFile[]): ProjectMeta {
+  const meta = readProjectMeta(slug);
+  if (meta.variations.length) return meta;
+  const printers = new Set<string>();
+  const ready = (files ?? listFiles(slug, meta))
+    .filter((f) => f.folder === "print" && f.info?.configured)
+    .filter((f) => !printers.has(f.info?.printer ?? "") && (printers.add(f.info?.printer ?? ""), true));
+  const main = variationSchema.parse({ id: MAIN_VARIATION, title: "Principal", files: ready.map((f) => f.rel), salePrices: meta.salePrices });
+  return updateProject(slug, { variations: [main] });
 }
 
 // ------------------------------------------------------------------------------------------------------ reading
@@ -702,11 +738,15 @@ function objectSize(meta: ProjectMeta, files: LibraryFile[], cover: Cover | null
 }
 
 export function getProject(slug: string) {
-  const meta = readProjectMeta(slug);
-  const files = listFiles(slug, meta);
+  const files = listFiles(slug, readProjectMeta(slug));
+  const meta = ensureVariations(slug, files);
+  const claimed = new Set(meta.variations.flatMap((v) => v.files));
   const cover = coverOf(meta, files);
   /** `coverChosen`: the cover was picked by hand (and still exists); otherwise it is the default plate. */
-  return { slug, ...meta, cover, coverChosen: !!meta.cover && cover === meta.cover, files, object: objectSize(meta, files, cover), variations: variationViews(meta, files), single: singleView(meta, files), folder: projectDir(slug) };
+  return { slug, ...meta, cover, coverChosen: !!meta.cover && cover === meta.cover, files, object: objectSize(meta, files, cover), variations: variationViews(meta, files),
+    /** Ready-to-print files no variation uses yet (e.g. saved straight from the slicer into the folder). */
+    loose: files.filter((f) => f.folder === "print" && f.info?.configured && !claimed.has(f.rel)).map((f) => f.rel),
+    folder: projectDir(slug) };
 }
 export type Project = ReturnType<typeof getProject>;
 

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "studio-verify",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "NEXT_DIST_DIR=.next-verify exec pnpm exec next start -p 3472 -H 127.0.0.1"],
+      "port": 3472
+    }
+  ]
+}

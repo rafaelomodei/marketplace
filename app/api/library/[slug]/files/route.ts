@@ -11,5 +11,5 @@ export const POST = (req: Request, { params }: Ctx) =>
     const files = [];
     for (const file of form.getAll("files"))
       if (file instanceof File) files.push({ name: file.name, data: new Uint8Array(await file.arrayBuffer()) });
-    return runAction(addLibraryFilesAction, { project: slug, folder: form.get("folder") || undefined, files });
+    return runAction(addLibraryFilesAction, { project: slug, folder: form.get("folder") || undefined, variation: form.get("variation") || undefined, files });
   });

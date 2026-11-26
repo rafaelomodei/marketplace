@@ -46,7 +46,7 @@ export function libraryFacts(project: string): LibraryFacts {
     grams: done ? Math.round((done.stats.grams.reduce((a, b) => a + b, 0) / done.cost.units) * 10) / 10 : null,
     unitCost: done?.cost.total ?? null,
     suggested: done?.cost.price ?? null,
-    variations: p.variations.map((v) => ({
+    variations: (p.variations.length > 1 ? p.variations : []).map((v) => ({
       title: v.title,
       size: v.size,
       feature: v.feature,
