@@ -186,7 +186,7 @@ export function CreateStep({ product, config, reload, preview, goTo }: StepProps
                 <Field label="Objetivo" hint="O que esta publicação deve comunicar?">
                   <Textarea rows={2} value={socialObjective} onChange={(e) => setSocialObjective(e.target.value)} placeholder="Ex.: apresentar este vaso como decoração para ambientes acolhedores" />
                 </Field>
-                <Field label="Título na arte" optional hint="Curto e direto — de preferência, 2 a 8 palavras.">
+                <Field label="Título na arte" optional hint="Curto e direto, de 2 a 8 palavras. A última linha sai em itálico; use | para escolher onde quebrar.">
                   <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Ex.: Design que decora e inspira" />
                 </Field>
                 <Field label="Texto de apoio" optional>

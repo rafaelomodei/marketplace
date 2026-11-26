@@ -53,8 +53,9 @@ Na substituição:
 ## 4. Modos
 
 ### Fundo branco (`white-bg`)
-- Packshot de e-commerce: fundo branco puro e uniforme (#FFFFFF), sem gradiente, sem textura e sem horizonte visível.
-- Luz de estúdio suave e uniforme, com sombra de contato sutil logo abaixo do produto.
+- Packshot de e-commerce: fundo branco puro e uniforme (#FFFFFF) em toda a imagem, sem gradiente, sem textura, sem vinheta e sem horizonte visível. Nenhuma variação de branco.
+- SEM NENHUMA SOMBRA: nem sombra de contato, nem sombra projetada, nem reflexo no chão, nem halo, brilho ou borrão em volta do produto. O produto aparece "flutuando" no branco, com contorno nítido; fora dele, só #FFFFFF.
+- Luz de estúdio suave e uniforme sobre o próprio produto (volume e detalhes visíveis), sem escurecer o fundo.
 - O produto ocupa cerca de 80% da maior dimensão, inteiro, centralizado e sem cortes.
 - Ângulo igual ao da melhor foto real (a mais frontal e completa), a não ser que as alterações permitidas digam outro.
 

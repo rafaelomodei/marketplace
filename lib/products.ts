@@ -11,6 +11,8 @@ export type ProductMeta = {
   marketplaces: string[];
   /** Structured seller facts. Kept optional so folders created by older Studio versions remain valid. */
   facts?: unknown;
+  /** The print-library project this product came from (folder name in ~/VerdeForma/biblioteca), when linked. */
+  libraryProject?: string;
 };
 
 export type ProductSummary = {
@@ -260,6 +262,19 @@ export function registerImage(
 
 export function deleteImage(id: number) {
   const img = getImage(id);
+  const d = db();
+
+  // Generated candidates can have an approved copy, which in turn can have
+  // marketplace exports. Deleting the candidate means deleting that whole
+  // branch so it cannot keep appearing elsewhere in the Studio.
+  if (img.kind === "generated") {
+    const approvedCopies = d.prepare("SELECT id FROM images WHERE parent_id = ? AND kind = 'approved'").all(id) as { id: number }[];
+    for (const copy of approvedCopies) deleteImage(copy.id);
+  } else if (img.kind === "approved") {
+    const exports = d.prepare("SELECT id FROM images WHERE parent_id = ? AND kind = 'export'").all(id) as { id: number }[];
+    for (const exported of exports) deleteImage(exported.id);
+  }
+
   const abs = imagePath(img);
   if (fs.existsSync(abs)) fs.rmSync(abs);
   syncProduct(img.product);

@@ -45,11 +45,24 @@ export function describeEvent(ev: any): string | null {
   }
 }
 
+/** A real PNG/JPEG/WebP file (Codex sometimes writes placeholders or broken copies to output.png). */
+export function isImageFile(file: string): boolean {
+  if (!fs.existsSync(file) || fs.statSync(file).size < 1024) return false;
+  const head = Buffer.alloc(12);
+  const fd = fs.openSync(file, "r");
+  fs.readSync(fd, head, 0, 12, 0);
+  fs.closeSync(fd);
+  const png = head.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  const jpeg = head[0] === 0xff && head[1] === 0xd8;
+  const webp = head.subarray(0, 4).toString() === "RIFF" && head.subarray(8, 12).toString() === "WEBP";
+  return png || jpeg || webp;
+}
+
 function newestImage(dir: string, since: number): string | null {
   if (!fs.existsSync(dir)) return null;
   const files = fs
     .readdirSync(dir)
-    .filter((f) => /\.(png|jpe?g|webp)$/i.test(f))
+    .filter((f) => /\.(png|jpe?g|webp)$/i.test(f) && isImageFile(path.join(dir, f)))
     .map((f) => ({ f: path.join(dir, f), t: fs.statSync(path.join(dir, f)).mtimeMs }))
     .filter((x) => x.t >= since - 1000)
     .sort((a, b) => b.t - a.t);
@@ -58,8 +71,8 @@ function newestImage(dir: string, since: number): string | null {
 
 /**
  * Runs `codex exec` with the images attached and returns the path of the generated image.
- * Codex is asked to copy its result to ./output.png; if it doesn't, we fall back to the
- * newest file in ~/.codex/generated_images/<thread>/.
+ * Codex is asked to copy its result to ./output.png; if it doesn't (or writes something that is
+ * not an image), we fall back to the newest image in ~/.codex/generated_images/<thread>/.
  */
 export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId: string | null; lastMessage: string }> {
   fs.mkdirSync(run.workdir, { recursive: true });
@@ -139,7 +152,7 @@ export function runCodex(run: CodexRun): Promise<{ outputPath: string; threadId:
 
       const direct = path.join(run.workdir, "output.png");
       const outputPath =
-        (fs.existsSync(direct) && fs.statSync(direct).size > 0 ? direct : null) ??
+        (isImageFile(direct) ? direct : null) ??
         (threadId ? newestImage(path.join(CODEX_HOME, "generated_images", threadId), started) : null);
       const lastMessage = fs.existsSync(path.join(run.workdir, "last-message.txt")) ? fs.readFileSync(path.join(run.workdir, "last-message.txt"), "utf8") : "";
       if (outputPath) return resolve({ outputPath, threadId, lastMessage });

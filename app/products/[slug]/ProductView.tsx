@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowLeft, CircleCheck, Undo2 } from "lucide-react";
+import { ArrowLeft, Boxes, CircleCheck, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { NextStepCard, ProductStatus } from "@/components/studio";
 import { Alert, Badge, Button, Code, Container, ErrorBanner, Heading, Icon, Lightbox, PaintedBackdrop, Spinner, Stepper } from "@/components/ui";
-import { api, fileUrl, reportError } from "@/lib/client/api";
+import { action, api, fileUrl, reportError } from "@/lib/client/api";
+import type { LibraryFacts } from "@/lib/library-studio";
+import { formatMoney, formatSize } from "@/lib/text";
 import type { ProductDetail } from "@/lib/products";
 import { completedSteps, nextStep, stateFromProduct, STEPS, type StepId } from "@/lib/workflow";
 import { CreateStep } from "./CreateStep";
@@ -22,6 +24,7 @@ export default function ProductView({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<StepId | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [library, setLibrary] = useState<LibraryFacts | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -38,6 +41,12 @@ export default function ProductView({ slug }: { slug: string }) {
   }, [reload]);
 
   const state = product ? stateFromProduct(product) : null;
+
+  // The print-library project this product came from: size, pieces and prices, with a way back.
+  const libraryProject = product?.meta.libraryProject;
+  useEffect(() => {
+    if (libraryProject) action<LibraryFacts | null>("get_product_library", { slug }).then(setLibrary, () => setLibrary(null));
+  }, [slug, libraryProject]);
 
   // Poll quickly while the AI is working so progress and results show up live.
   useEffect(() => {
@@ -96,6 +105,21 @@ export default function ProductView({ slug }: { slug: string }) {
               <Code>
                 products/{product.stage}/{slug}
               </Code>
+              {library && (
+                <Link href={`/biblioteca/${library.project}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-soft hover:text-ink-strong">
+                  <Icon icon={Boxes} /> Biblioteca
+                  <span className="text-ink-muted">
+                    {[
+                      library.size && formatSize(library.size),
+                      library.pieces && library.pieces > 1 && `${library.pieces} peças por objeto`,
+                      library.grams !== null && `${library.grams.toLocaleString("pt-BR")} g de filamento`,
+                      ...library.salePrices.map((t) => `${t.quantity} un. ${formatMoney(t.price)}`),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </Link>
+              )}
             </div>
             {product.stage === "create" ? (
               <Button variant="secondary" onClick={() => move("ready")} title="Valida ficha, anúncio e imagens antes de mover a pasta">

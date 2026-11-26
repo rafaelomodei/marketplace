@@ -1,14 +1,7 @@
 # Assets oficiais da Verde Forma
 
-`source/` preserva os cinco SVGs recebidos da identidade da Verde Forma, sem qualquer alteração. `rendered/` contém cópias PNG em alta resolução para anexação ao gerador de imagens, que não recebe SVG como entrada.
+`oficial/assinatura-verdeforma.png` é a assinatura usada nas peças sociais (símbolo + "Verde Forma"). PNG com fundo transparente. A IA nunca a vê nem a desenha: o sistema (`lib/social-design.ts`) cola o arquivo depois da geração, redimensionado só pela altura (proporção original), no canto inferior esquerdo. Cores e desenho ficam idênticos ao arquivo.
 
-As peças sociais usam apenas estas quatro variantes:
+`source/` preserva os cinco SVGs recebidos da identidade da Verde Forma, sem qualquer alteração. `rendered/` contém cópias PNG em alta resolução dessas variantes (hoje fora do fluxo das peças sociais).
 
-- `logo-verdeforma`: assinatura horizontal para fundo escuro ou verde;
-- `logo-verdeforma-coluna`: assinatura compacta para fundo escuro ou verde;
-- `icon-logo-verdeforma`: brasão transparente para fundo claro;
-- `icon-verdeforma`: ícone com base branca para fundo fotográfico movimentado.
-
-`favicon-verdeforma` é mantido como parte do pacote oficial, mas não é anexado aos jobs sociais porque repete o brasão em resolução de favicon.
-
-Não redimensionar com proporções independentes, redesenhar, recolorir ou converter a marca em texto. Os tamanhos de uso e a área de proteção estão em `references/direcao-de-arte.md`.
+Não redimensionar com proporções independentes, redesenhar, recolorir ou converter a marca em texto.

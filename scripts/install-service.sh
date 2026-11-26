@@ -47,6 +47,7 @@ UNIT
 systemctl --user daemon-reload
 systemctl --user enable --now "$NAME"
 echo
-echo "Pronto: http://localhost:3456"
+echo "Pronto nesta máquina: http://localhost:3456"
+echo "Na rede local: use http://IP-DESTA-MAQUINA:3456"
 echo "Logs:    journalctl --user -u $NAME -f"
 echo "Dica: para subir mesmo antes de fazer login, rode: sudo loginctl enable-linger $USER"

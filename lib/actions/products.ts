@@ -11,7 +11,7 @@ import {
 } from "../products";
 import { nextStep, stateFromProduct, stateFromSummary } from "../workflow";
 import { listingRequirements } from "../listing";
-import { openExportFolder } from "../export";
+import { openApprovedFolder, openExportFolder } from "../export";
 import { marketplaces } from "../config";
 import { defineAction } from "./define";
 
@@ -54,6 +54,14 @@ export const openExportFolderAction = defineAction({
     marketplace: z.string().refine((value) => Boolean(marketplaces()[value]), "Marketplace desconhecido"),
   }),
   run: ({ slug, marketplace }) => openExportFolder(slug, marketplace),
+});
+
+export const openApprovedFolderAction = defineAction({
+  name: "open_approved_folder",
+  title: "Abrir pasta das imagens aprovadas",
+  description: "Abre no explorador de arquivos a pasta local que contém as imagens aprovadas do produto.",
+  input: z.object({ slug }),
+  run: ({ slug }) => openApprovedFolder(slug),
 });
 
 export const createProductAction = defineAction({

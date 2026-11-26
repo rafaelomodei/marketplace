@@ -1,15 +1,18 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { filamentRefFiles, findFilament, generationSkill, SOCIAL_BRAND_ASSET_COUNT, socialBrandAssets, socialGenerationSkill, socialStyleReferenceFiles } from "./config";
+import { filamentRefFiles, findFilament, generationSkill, socialGenerationSkill } from "./config";
 import { db, now, type JobRow } from "./db";
 import { runCodex } from "./engine/codex";
-import { DATA_DIR, ROOT, SUBDIRS } from "./paths";
+import { pureWhiteBackground } from "./finishing";
+import { DATA_DIR, ROOT, SOCIAL_SIGNATURE_FILE, SUBDIRS } from "./paths";
 import { buildPrompt, jobInputIds, normalizeParams, type Aspect, type JobParams } from "./prompts";
+import { composeSocialPost, toCanvas, type SocialDesign } from "./social-design";
 import { getImage, getProduct, HttpError, imagePath, readMeta, registerImage, requireProduct } from "./products";
 import { createListingJob, executeListingJob } from "./listing";
 import { getCodexSettings } from "./settings";
 import { createFactsAssistJob, executeFactsAssistJob } from "./facts-assistant";
+import { promptSizeNote } from "./library-studio";
 
 const CONCURRENCY = Math.max(1, Number(process.env.STUDIO_CONCURRENCY ?? 1));
 const MAX_BATCH = 12;
@@ -80,22 +83,14 @@ function enqueue(product: string, jobs: JobParams[]): string[] {
   for (const job of jobs) {
     const params = withFilamentRefs(job);
     validate(product, params);
-    const socialRefs = params.type === "social" ? socialStyleReferenceFiles() : [];
-    const brandAssets = params.type === "social" ? socialBrandAssets() : [];
-    if (params.type === "social" && !socialRefs.length)
-      throw new HttpError(500, "A referência visual da Verde Forma não foi encontrada. Configure VERDE_FORMA_SOCIAL_REFERENCE.");
-    if (params.type === "social" && brandAssets.length !== SOCIAL_BRAND_ASSET_COUNT)
-      throw new HttpError(500, "Os assets oficiais da marca Verde Forma não foram encontrados.");
-    const jobSkill = params.type === "social" ? `${skill}\n\n---\n\n${socialGenerationSkill()}` : skill;
-    const socialBaseTarget =
-      params.type === "social" && ["approved", "generated"].includes(getImage(params.productImageIds[0]).kind);
+    if (params.type === "social" && !fs.existsSync(SOCIAL_SIGNATURE_FILE))
+      throw new HttpError(500, "A logo oficial da Verde Forma não foi encontrada.");
+    const meta = readMeta(product);
     const { prompt, label } = buildPrompt(params, {
-      meta: readMeta(product),
+      meta,
+      sizeNote: promptSizeNote(meta.libraryProject),
       filament: findFilament,
-      skill: jobSkill,
-      socialReferenceCount: socialRefs.length,
-      socialBrandAssets: brandAssets.map(({ label, use }) => ({ label, use })),
-      socialBaseTarget,
+      skill: params.type === "social" ? socialGenerationSkill() : skill,
     });
     const id = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
     db()
@@ -125,10 +120,22 @@ function withFilamentRefs(p: JobParams): JobParams {
 /** Absolute paths of everything attached to Codex, in prompt order. */
 function jobInputPaths(p: JobParams): string[] {
   const images = jobInputIds(p).map((id) => imagePath(getImage(id)));
+  // A social correction edits the clean photo (before texts and logo), not the finished piece.
+  if (p.type === "correct" && p.design) images[0] = cleanPhoto(p.sourceImageId) ?? images[0];
   const refs = p.type === "recolor" ? (p.refs ?? []).flatMap((r) => r.files.map((f) => path.join(ROOT, f))) : [];
-  const socialRefs = p.type === "social" ? socialStyleReferenceFiles() : [];
-  const brandAssets = p.type === "social" ? socialBrandAssets().map((asset) => asset.file) : [];
-  return [...images, ...refs, ...socialRefs, ...brandAssets];
+  // Social jobs get no style pieces: the generator copied their products instead of ours.
+  return [...images, ...refs];
+}
+
+/** Texts of a social piece: what code lays over the photo. */
+const designOf = (p: JobParams): SocialDesign | undefined =>
+  p.type === "social" ? { format: p.format, headline: p.headline, supportingText: p.supportingText, cta: p.cta } : p.type === "correct" ? p.design : undefined;
+
+/** The photo a social piece was composed on (kept in the job folder), when it exists. */
+function cleanPhoto(imageId: number): string | null {
+  const jobId = getImage(imageId).job_id;
+  const file = jobId ? path.join(DATA_DIR, "jobs", jobId, "photo.png") : "";
+  return file && fs.existsSync(file) ? file : null;
 }
 
 export function getJob(id: string): JobRow {
@@ -169,10 +176,11 @@ export function correctImage(imageId: number, correction: string): string[] {
   const original = getJob(image.job_id);
   if (original.type === "listing") throw new HttpError(400, "Este resultado não é uma imagem");
   const previous = normalizeParams(JSON.parse(original.params));
-  const references = jobInputIds(previous).filter((id) => id !== imageId);
+  const design = designOf(previous);
   // Social pieces have their own 4:5/9:16 formats; corrections must preserve the generated canvas.
-  const aspect = previous.type === "social" ? "ref" : "aspect" in previous ? previous.aspect : "1:1";
-  return enqueue(image.product, [{ type: "correct", sourceImageId: imageId, referenceImageIds: references, correction: correction.trim(), aspect }]);
+  const aspect = design ? "ref" : "aspect" in previous ? previous.aspect : "1:1";
+  const references = jobInputIds(previous).filter((id) => id !== imageId);
+  return enqueue(image.product, [{ type: "correct", sourceImageId: imageId, referenceImageIds: references, correction: correction.trim(), aspect, design }]);
 }
 
 /** Queues an AI reframe of an approved image to a new aspect. */
@@ -202,8 +210,9 @@ async function execute(job: JobRow, ctrl: AbortController) {
     }
     const params = normalizeParams(JSON.parse(job.params));
     const inputs = jobInputPaths(params);
-    appendLog(job.id, `iniciando codex com ${inputs.length} imagem(ns) de entrada`);
     const workdir = path.join(DATA_DIR, "jobs", job.id);
+    fs.mkdirSync(workdir, { recursive: true });
+    appendLog(job.id, `iniciando codex com ${inputs.length} imagem(ns) de entrada`);
     const { outputPath } = await runCodex({
       workdir,
       prompt: job.prompt,
@@ -216,9 +225,20 @@ async function execute(job: JobRow, ctrl: AbortController) {
     });
 
     const { dir } = requireProduct(job.product);
-    const rel = path.posix.join(SUBDIRS.generated, `${job.id}${path.extname(outputPath) || ".png"}`);
+    const design = designOf(params);
+    const finished = !!design || params.type === "white-bg";
+    const rel = path.posix.join(SUBDIRS.generated, `${job.id}${finished ? ".png" : path.extname(outputPath) || ".png"}`);
     fs.mkdirSync(path.join(dir, SUBDIRS.generated), { recursive: true });
-    fs.copyFileSync(outputPath, path.join(dir, rel));
+    if (design) {
+      // The photo is kept so corrections (and new texts) start from it, not from the finished piece.
+      const photo = await toCanvas(outputPath, design.format);
+      fs.writeFileSync(path.join(workdir, "photo.png"), photo);
+      fs.writeFileSync(path.join(dir, rel), await composeSocialPost(photo, design));
+      appendLog(job.id, "título, texto de apoio, chamada e logo oficial aplicados sobre a foto");
+    } else if (params.type === "white-bg") {
+      fs.writeFileSync(path.join(dir, rel), await pureWhiteBackground(outputPath));
+      appendLog(job.id, "fundo branco puro (#FFFFFF), sem sombra, produto centralizado");
+    } else fs.copyFileSync(outputPath, path.join(dir, rel));
     const parentId = "sourceImageId" in params ? params.sourceImageId : null;
     const imageId = registerImage(job.product, rel, "generated", { label: job.label, jobId: job.id, parentId });
     d.prepare("UPDATE jobs SET status = 'done', output_image_id = ?, finished_at = ? WHERE id = ?").run(imageId, now(), job.id);

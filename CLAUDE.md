@@ -3,6 +3,7 @@
 ## Antes de criar qualquer coisa: procure o que já existe
 - Componente visual → `components/ui/index.ts` (design system) e `components/studio/index.ts` (domínio). Catálogo vivo em `/design-system` (interno: só por URL, fora do menu).
 - Função/regra de negócio → `lib/` (`products.ts`, `jobs.ts`, `prompts.ts`, `export.ts`, `workflow.ts`, `client/api.ts`, `cn.ts`).
+- Biblioteca de impressão 3D (`/biblioteca`, pastas em `~/VerdeForma/biblioteca`) → `lib/library.ts` (projetos, pastas, fila de cálculo), `lib/print-files.ts` (ler 3MF/STL, imagem do modelo), `lib/slicer.ts` (Creality Print: abrir e fatiar sem janela), `lib/costing.ts` (fórmula da planilha), `lib/raster.ts` (render sem navegador). Ligação biblioteca ↔ estúdio de imagens (um projeto = um produto) → `lib/library-studio.ts`. Nomes de arquivo: `nomeDoProjeto_Impressora.3mf` (`standardFileBase` em `lib/text.ts`).
 - Se algo parecido existe, estenda (nova variante/prop) em vez de duplicar. Algo novo usado em 2+ lugares vira componente/função compartilhada.
 
 ## Design system "Ateliê" (atomic design)

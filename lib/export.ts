@@ -12,12 +12,7 @@ import { getImage, HttpError, imagePath, registerImage, requireProduct } from ".
  */
 export type ExportMode = "pad" | "crop";
 
-/** Opens a product's export directory in the host operating system's file manager. */
-export async function openExportFolder(slug: string, marketplace: string): Promise<{ folder: string }> {
-  if (!marketplaces()[marketplace]) throw new HttpError(400, `Marketplace desconhecido: ${marketplace}`);
-
-  const { dir } = requireProduct(slug);
-  const folder = path.join(dir, SUBDIRS.export, marketplace);
+export async function openFolder(folder: string, relativeFolder: string): Promise<{ folder: string }> {
   fs.mkdirSync(folder, { recursive: true });
 
   const [command, args] =
@@ -38,7 +33,22 @@ export async function openExportFolder(slug: string, marketplace: string): Promi
     throw new HttpError(500, "Não foi possível abrir a pasta no explorador de arquivos");
   });
 
-  return { folder: path.posix.join(SUBDIRS.export, marketplace) };
+  return { folder: relativeFolder };
+}
+
+/** Opens a product's export directory in the host operating system's file manager. */
+export async function openExportFolder(slug: string, marketplace: string): Promise<{ folder: string }> {
+  if (!marketplaces()[marketplace]) throw new HttpError(400, `Marketplace desconhecido: ${marketplace}`);
+
+  const { dir } = requireProduct(slug);
+  const relativeFolder = path.posix.join(SUBDIRS.export, marketplace);
+  return openFolder(path.join(dir, relativeFolder), relativeFolder);
+}
+
+/** Opens the original approved images, without requiring marketplace exports. */
+export async function openApprovedFolder(slug: string): Promise<{ folder: string }> {
+  const { dir } = requireProduct(slug);
+  return openFolder(path.join(dir, SUBDIRS.approved), SUBDIRS.approved);
 }
 
 export async function renderTarget(input: string, output: string, width: number, height: number, mode: ExportMode) {

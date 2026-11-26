@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, RotateCcw, Sparkles, ThumbsDown, Undo2, Wand2 } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, Sparkles, ThumbsDown, Trash2, Undo2, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { JobCard, MODE_UI } from "@/components/studio";
 import { Badge, Button, ChoiceGroup, Disclosure, EmptyState, Field, Icon, ImageTile, SectionHeader, Textarea } from "@/components/ui";
@@ -28,6 +28,15 @@ export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
   async function act(key: number | string, url: string, body: object) {
     setBusy(key);
     await api(url, { method: "POST", json: body }).catch(reportError);
+    await reload();
+    setBusy(null);
+  }
+
+  async function remove(img: ImageRow) {
+    const consequence = img.status === "approved" ? " A cópia aprovada e os arquivos preparados a partir dela também serão removidos." : "";
+    if (!confirm(`Excluir esta imagem definitivamente?${consequence}`)) return;
+    setBusy(img.id);
+    await api(`/api/images/${img.id}`, { method: "DELETE" }).catch(reportError);
     await reload();
     setBusy(null);
   }
@@ -106,6 +115,7 @@ export function ReviewStep({ product, reload, preview, goTo }: StepProps) {
                 onReview={(action) => act(img.id, `/api/images/${img.id}`, { action })}
                 onRetry={job ? () => act(job.id, `/api/jobs/${job.id}`, { action: "retry" }) : undefined}
                 onCorrect={(correction) => act(img.id, `/api/images/${img.id}`, { action: "correct", correction })}
+                onDelete={() => remove(img)}
               />
             );
           })}
@@ -125,6 +135,7 @@ function Candidate({
   onReview,
   onRetry,
   onCorrect,
+  onDelete,
 }: {
   img: ImageRow;
   job?: JobRow;
@@ -135,6 +146,7 @@ function Candidate({
   onReview: (action: "approve" | "reject" | "reset") => void;
   onRetry?: () => void;
   onCorrect: (correction: string) => void;
+  onDelete: () => void;
 }) {
   const mode = job ? MODE_UI[job.type as JobType] : undefined;
   const [correcting, setCorrecting] = useState(false);
@@ -173,6 +185,9 @@ function Candidate({
         )}
         <Button variant="ghost" disabled={busy} onClick={() => setCorrecting(!correcting)} title="Cria uma nova versão a partir desta imagem e das referências originais">
           <Icon icon={Wand2} /> Corrigir esta versão
+        </Button>
+        <Button variant="ghost" disabled={busy} onClick={onDelete} title="Remove esta imagem definitivamente">
+          <Icon icon={Trash2} /> Excluir
         </Button>
       </div>
       {correcting && (

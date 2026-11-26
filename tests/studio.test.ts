@@ -62,6 +62,22 @@ describe("folders ⇄ database", () => {
     expect(fs.existsSync(path.join(dir, "exports/shopee/1x1/fundo-branco-job1.jpg"))).toBe(false);
   });
 
+  it("deletes an approved candidate together with its approved copy and exports", async () => {
+    const dir = path.join(root, "products/create", slug);
+    fs.mkdirSync(path.join(dir, "generated"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "generated/delete-me.png"), await png(800, 800));
+    const generatedId = products.registerImage(slug, "generated/delete-me.png", "generated", { label: "excluir", jobId: "delete-me" });
+    const approvedId = products.approveImage(generatedId);
+    await exportImages({ imageIds: [approvedId], marketplace: "shopee", targetIds: ["1x1"] });
+
+    products.deleteImage(generatedId);
+
+    expect(fs.existsSync(path.join(dir, "generated/delete-me.png"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, "approved/excluir-delete-me.png"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, "exports/shopee/1x1/excluir-delete-me.jpg"))).toBe(false);
+    expect(products.getProduct(slug).images.some((image) => [generatedId, approvedId].includes(image.id))).toBe(false);
+  });
+
   it("moves the folder to ready/ and back", () => {
     products.moveProduct(slug, "ready");
     expect(fs.existsSync(path.join(root, "products/ready", slug))).toBe(true);
@@ -104,6 +120,20 @@ describe("export", () => {
       const m = await sharp(out).metadata();
       expect([m.width, m.height, m.format]).toEqual([1200, 1600, "jpeg"]);
     }
+  });
+
+  it("exports Instagram feed images in 4:5", async () => {
+    const slug = products.createProduct("Post Instagram");
+    const dir = path.join(root, "products/create", slug);
+    fs.mkdirSync(path.join(dir, "generated"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "generated/post.png"), await png(1200, 1200));
+    const generatedId = products.registerImage(slug, "generated/post.png", "generated", { label: "post", jobId: "instagram-job" });
+    const approvedId = products.approveImage(generatedId);
+
+    await exportImages({ imageIds: [approvedId], marketplace: "instagram", targetIds: ["4x5"] });
+
+    const image = await sharp(path.join(dir, "exports/instagram/4x5/post-instagram-job.jpg")).metadata();
+    expect([image.width, image.height, image.format]).toEqual([1080, 1350, "jpeg"]);
   });
 });
 
@@ -180,7 +210,7 @@ describe("prompts", () => {
     expect(prompt).toContain("CORREÇÃO SOLICITADA: centralizar o produto");
   });
 
-  it("builds a social-media brief without inventing missing copy", () => {
+  it("asks the generator for a text-free photo with the layout areas free", () => {
     const params: JobParams = {
       type: "social",
       productImageIds: [1, 2],
@@ -189,38 +219,26 @@ describe("prompts", () => {
       objective: "Apresentar o produto como decoração para casa",
       headline: "Design que inspira",
     };
-    const { prompt, label } = buildPrompt(params, {
-      meta,
-      filament,
-      skill: `${skill}\n\n# Identidade Verde Forma`,
-      socialReferenceCount: 1,
-    });
+    const { prompt, label } = buildPrompt(params, { meta, filament, skill: "# Fotografia Verde Forma" });
     expect(jobInputIds(params)).toEqual([1, 2]);
     expect(label).toBe("social-instagram-feed-portrait");
-    expect(prompt).toContain("Instagram");
-    expect(prompt).toContain("Imagem 3: REFERÊNCIA VISUAL OBRIGATÓRIA DA MARCA");
-    expect(prompt).toContain("deve parecer uma nova publicação do mesmo perfil");
-    expect(prompt).toContain("feed retrato 4:5 (1080 × 1350 px)");
-    expect(prompt).toContain("HEADLINE: Design que inspira.");
-    expect(prompt).toContain("TEXTO DE APOIO: não inserir.");
-    expect(prompt).toContain("Não criar logo, arroba, preço");
+    expect(prompt).toContain("# Fotografia Verde Forma");
+    expect(prompt).toContain("Imagens 1–2: PRODUTO");
+    expect(prompt).not.toContain("Imagem 3");
+    expect(prompt).toContain("OBJETIVO DA PUBLICAÇÃO: Apresentar o produto como decoração para casa");
+    expect(prompt).toContain("NÃO escreva na imagem");
+    expect(prompt).toContain("gerar em 1024 × 1536 px");
+    expect(prompt).toMatch(/ÁREA DO TÍTULO livre e clara: x \d+–\d+%, y \d+–\d+%/);
+    expect(prompt).toContain("NENHUM texto, letra, logo");
   });
 
-  it("locks an approved social base and forbids semantic product completion", () => {
+  it("corrects a social piece on its photo and keeps the free areas", () => {
     const { prompt } = buildPrompt(
-      {
-        type: "social",
-        productImageIds: [9, 1, 2],
-        platform: "instagram",
-        format: "feed-portrait",
-        objective: "Apresentar a vela",
-      },
-      { meta, filament, skill, socialBaseTarget: true, socialReferenceCount: 1 },
+      { type: "correct", sourceImageId: 9, referenceImageIds: [1], correction: "luz mais quente", aspect: "ref", design: { format: "vertical", headline: "Oi" } },
+      { meta, filament, skill },
     );
-    expect(prompt).toContain("Imagem 1: BASE DE EDIÇÃO E PRODUTO IMUTÁVEL");
-    expect(prompt).toContain("Imagens 2–3: REFERÊNCIAS ORIGINAIS DO MESMO PRODUTO");
-    expect(prompt).toContain("EDITAR A IMAGEM 1, não recriá-la");
-    expect(prompt).toContain("não adicionar pavio, chama, faísca");
+    expect(prompt).toContain("FOTOGRAFIA de uma peça de rede social, sem textos");
+    expect(prompt).toContain("ÁREA DO RODAPÉ livre e clara");
   });
 
   it("expands recolor requests into one job per combination", () => {

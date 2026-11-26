@@ -34,10 +34,11 @@ melhores e exporta nas proporções que o marketplace pede.
 ### Geração com IA (Codex)
 | Modo | O que faz |
 |---|---|
-| **Fundo branco** | Packshot em fundo `#FFFFFF`, luz de estúdio e sombra suave. Remove mãos, paredes e tecidos da foto original. |
+| **Fundo branco** | Packshot em fundo `#FFFFFF` exato, sem sombra nem reflexo (o sistema limpa qualquer sombra que a IA deixar e centraliza o produto). Remove mãos, paredes e tecidos da foto original. |
 | **Cenário de referência** | **Edita** a imagem de cenário: troca só o objeto-alvo (você diz qual, ou o app usa o mais parecido) pelo seu produto e mantém todo o resto igual. |
 | **Variação de cor** | Recria a imagem trocando só as cores pelos **filamentos Voolt3D** escolhidos. As fotos reais do filamento vão junto como referência de cor e acabamento. Várias escolhas geram uma imagem por combinação. |
 | **Reenquadrar com IA** | Estende o cenário para outra proporção (ex.: 3:4) em vez de cortar. |
+| **Redes sociais** | A IA **fotografa** o produto numa cena da Verde Forma (sem nenhum texto), deixando livres as áreas do título e do rodapé. O sistema aplica por cima, em camadas (`lib/social-design.ts`): título em Playfair Display (última linha em itálico caramelo; use `\|` para quebrar), texto de apoio em Poppins, cápsula de chamada e a **logo oficial sem alteração**. Correções editam a foto limpa e reaplicam os mesmos textos. |
 
 - Você escolhe o formato da imagem principal (1:1, 3:4 ou igual ao cenário).
 - **Alterações permitidas**: qualquer mudança além da tarefa do modo precisa ser escrita aqui. Só muda o que estiver escrito; todo o resto fica igual às imagens de entrada.
@@ -92,6 +93,7 @@ Requisitos: Node 20+, pnpm e o Codex CLI logado (`codex login`) com `image_gener
 pnpm install
 pnpm dev                          # desenvolvimento em http://localhost:3456
 scripts/install-service.sh        # instala como serviço systemd do usuário (sobe junto com o PC)
+pnpm rebuild                      # gera um novo build e reinicia o serviço instalado
 ```
 
 - Serviço: `systemctl --user status marketplace-studio` · logs: `journalctl --user -u marketplace-studio -f`

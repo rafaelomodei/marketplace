@@ -44,7 +44,7 @@ export const jobRequest = z.discriminatedUnion("type", [
     extra,
   }),
   z.object({
-    type: z.literal("social").describe("Peça estática para redes sociais seguindo a identidade da Verde Forma"),
+    type: z.literal("social").describe("Peça estática para redes sociais: a IA fotografa o produto numa cena da marca e o sistema aplica título, apoio, CTA e logo oficial por cima"),
     productImageIds: ids.describe("Fotos reais ou referências aprovadas do produto"),
     platform: z.enum(["instagram", "tiktok", "facebook"]),
     format: z.enum(["feed-portrait", "feed-square", "vertical"]),

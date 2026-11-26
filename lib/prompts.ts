@@ -1,5 +1,6 @@
 import type { Filament } from "./config";
 import type { ProductMeta } from "./products";
+import { boxInFrame, GENERATION_FRAME, SOCIAL_CANVAS, socialZones, type SocialDesign } from "./social-layout";
 
 export type Aspect = "1:1" | "3:4" | "ref";
 export type SocialPlatform = "instagram" | "tiktok" | "facebook";
@@ -26,7 +27,16 @@ export type JobParams =
       extra?: string;
     }
   | { type: "reframe"; sourceImageId: number; aspect: Aspect; extra?: string }
-  | { type: "correct"; sourceImageId: number; referenceImageIds: number[]; correction: string; aspect: Aspect; extra?: string }
+  | {
+      type: "correct";
+      sourceImageId: number;
+      referenceImageIds: number[];
+      correction: string;
+      aspect: Aspect;
+      extra?: string;
+      /** Inherited from a social piece: Imagem 1 is its clean photo and the same texts are laid on top again. */
+      design?: SocialDesign;
+    }
   | {
       /** The product in use, in a scene described in words (no scene photo needed). */
       type: "staged";
@@ -110,12 +120,8 @@ export type PromptContext = {
   filament: (id: string) => Filament | undefined;
   /** Body of skills/marketplace-product-image/SKILL.md — the rules every job follows. */
   skill: string;
-  /** Number of canonical Verde Forma visual references attached after product images. */
-  socialReferenceCount?: number;
-  /** Official logo variants attached after the visual references, in this exact order. */
-  socialBrandAssets?: { label: string; use: string }[];
-  /** First social input is an approved/generated composition that must be edited in place. */
-  socialBaseTarget?: boolean;
+  /** Real size of the object, from the print library (keeps the scale right in scenes). */
+  sizeNote?: string;
 };
 
 /** The skill holds the rules; this builds the short job sheet that goes after it. */
@@ -179,6 +185,10 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       task.push("Criar uma nova versão da Imagem 1, aplicando somente a correção solicitada abaixo.");
       task.push(`CORREÇÃO SOLICITADA: ${p.correction.trim()}`);
       task.push("As referências originais têm prioridade para fidelidade do produto; não introduza alterações além da correção.");
+      if (p.design) {
+        task.push("A Imagem 1 é a FOTOGRAFIA de uma peça de rede social, sem textos: título, apoio, chamada e logo são aplicados pelo sistema depois. Pedidos sobre textos ou logo não se aplicam à foto.");
+        task.push(...socialFrameBrief(p.design.format));
+      }
       break;
     case "staged":
       label = "em-uso";
@@ -187,43 +197,15 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
       task.push("Criar uma foto realista do produto em uso, na cena descrita abaixo (seção 4, Em uso).");
       task.push(`CENA: ${p.setting.trim()}`);
       break;
-    case "social": { 
+    case "social": {
       label = `social-${p.platform}-${p.format}`;
-      if (ctx.socialBaseTarget) {
-        images.push("Imagem 1: BASE DE EDIÇÃO E PRODUTO IMUTÁVEL — partir desta imagem; preservar integralmente o produto e tudo que já estiver correto.");
-        if (p.productImageIds.length > 1)
-          images.push(`${imageRange(2, p.productImageIds.length - 1)}: REFERÊNCIAS ORIGINAIS DO MESMO PRODUTO — usar para conferir geometria, cores, peças e acabamento; não copiar fundo.`);
-      } else {
-        images.push(`${imageRange(1, p.productImageIds.length)}: PRODUTO — referências reais prioritárias; preservar forma, cores, inscrições e acabamento.`);
-      }
-      if (ctx.socialReferenceCount)
-        images.push(
-          `${imageRange(p.productImageIds.length + 1, ctx.socialReferenceCount)}: REFERÊNCIA VISUAL OBRIGATÓRIA DA MARCA — copiar o sistema visual (paleta, tipografia, proporções, respiro, hierarquia e linguagem fotográfica); ignorar os produtos, textos e logos presentes nessa referência.`,
-        );
-      let nextSocialImage = p.productImageIds.length + (ctx.socialReferenceCount ?? 0) + 1;
-      for (const asset of ctx.socialBrandAssets ?? []) {
-        images.push(`Imagem ${nextSocialImage}: ${asset.label} — ${asset.use}. Importar sem redesenhar, recolorir, recortar ou deformar.`);
-        nextSocialImage += 1;
-      }
+      images.push(`${imageRange(1, p.productImageIds.length)}: PRODUTO — o mesmo objeto; é ESTE objeto que aparece na foto, recriado com fidelidade total.`);
       const platform = { instagram: "Instagram", tiktok: "TikTok", facebook: "Facebook" }[p.platform];
-      const format = {
-        "feed-portrait": "feed retrato 4:5 (1080 × 1350 px)",
-        "feed-square": "feed quadrado 1:1 (1080 × 1080 px)",
-        vertical: "vertical 9:16 para Stories/Reels/TikTok (1080 × 1920 px)",
-      }[p.format];
-      task.push(`Criar uma peça estática para ${platform}, no formato ${format}, seguindo integralmente o guia específico de redes sociais acima.`);
-      task.push("A referência visual da marca anexada é um ALVO DE DIREÇÃO DE ARTE, não apenas inspiração. A saída deve parecer uma nova publicação do mesmo perfil.");
-      task.push("Antes de gerar, elaborar internamente um plano estruturado com: variante A–E, caixas normalizadas de produto/título/apoio/CTA/logo, margem segura, paleta da interface e ornamentos. Só então gerar a cena e aplicar a composição gráfica.");
-      task.push("Executar na ordem: (1) planejar caixas sem colisão; (2) produzir a cena preservando o produto e deixando as áreas reservadas vazias; (3) aplicar texto e CTA como camada gráfica; (4) pontuar o QA. Rejeitar a própria saída se houver bloqueio ou nota menor que 14/16.");
-      if (ctx.socialBaseTarget)
-        task.push("EDITAR A IMAGEM 1, não recriá-la. Tratar a região do produto como máscara bloqueada: não redesenhar, rel iluminar, completar, estilizar ou substituir nenhum pixel essencial do objeto. As imagens seguintes servem para auditoria de fidelidade.");
-      task.push("PROIBIÇÃO ABSOLUTA: não adicionar pavio, chama, faísca, suporte, encaixe, ornamento, peça, cor ou função ao produto por inferência semântica. Uma 'vela' não deve ser acesa nem ganhar pavio se isso não estiver visível nas referências ou explicitamente solicitado.");
-      task.push(`OBJETIVO DA PEÇA: ${p.objective.trim()}`);
-      task.push(`HEADLINE: ${p.headline?.trim() || "não inserir"}.`);
-      task.push(`TEXTO DE APOIO: ${p.supportingText?.trim() || "não inserir"}.`);
-      task.push(`CHAMADA PARA AÇÃO: ${p.cta?.trim() || "não inserir"}.`);
-      task.push("ASSINATURA OBRIGATÓRIA: inserir exatamente uma das variantes oficiais anexadas, escolhida pelo contraste do fundo e nas dimensões/posição definidas pelo guia. A geometria, as proporções, as cores e a área de proteção do asset são imutáveis.");
-      task.push("Não criar logo, arroba, preço, condição comercial ou texto por conta própria. A logo deve ser importada somente dos assets oficiais anexados; os demais itens só entram quando fornecidos neste job.");
+      task.push(`Fotografar o produto para uma publicação de ${platform}, seguindo o guia de fotografia acima.`);
+      task.push(`OBJETIVO DA PUBLICAÇÃO: ${p.objective.trim()}`);
+      const words = [p.headline, p.supportingText].filter((t) => t?.trim()).join(" / ");
+      if (words) task.push(`Mensagem que o sistema vai escrever sobre a foto (NÃO escreva na imagem; use só para escolher o clima da cena): "${words}".`);
+      task.push(...socialFrameBrief(p.format));
       break;
     }
   }
@@ -233,6 +215,7 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
     `Modo: ${JOB_TYPE_LABEL[p.type]} (\`${p.type}\`)`,
     `Produto: "${meta.name}"${meta.description ? ` — ${meta.description}` : ""}`,
     meta.fidelityNotes ? `Notas do vendedor (NUNCA mudar): ${meta.fidelityNotes}` : "",
+    ctx.sizeNote ?? "",
     "",
     "## Imagens anexadas",
     ...images.map((l) => `- ${l}`),
@@ -251,4 +234,27 @@ export function buildPrompt(p: JobParams, ctx: PromptContext): { prompt: string;
     .replace(/\n(## )/g, "\n\n$1");
 
   return { prompt: `${ctx.skill.trim()}\n\n---\n\n${sheet}\n`, label };
+}
+
+const area = (b: { x0: number; y0: number; x1: number; y1: number }) => `x ${b.x0}–${b.x1}%, y ${b.y0}–${b.y1}%`;
+
+/** Size and free areas of a social photo, in percent of the generated image (see lib/social-design.ts). */
+export function socialFrameBrief(format: SocialFormat): string[] {
+  const frame = GENERATION_FRAME[format];
+  const zones = socialZones(format);
+  const visible = boxInFrame(format, { left: 0, top: 0, ...SOCIAL_CANVAS[format] });
+  const product = boxInFrame(format, zones.product);
+  const crop =
+    format === "feed-square"
+      ? ""
+      : format === "vertical"
+        ? ` As faixas x 0–${visible.x0}% e ${visible.x1}–100% são cortadas depois: nada importante nelas.`
+        : ` As faixas y 0–${visible.y0}% e ${visible.y1}–100% são cortadas depois: nada do produto nelas.`;
+  return [
+    `FORMATO: gerar em ${frame.width} × ${frame.height} px.${crop}`,
+    `ÁREA DO TÍTULO livre e clara: ${area(boxInFrame(format, zones.text))}.`,
+    `ÁREA DO RODAPÉ livre e clara: ${area(boxInFrame(format, zones.footer))}.`,
+    `PRODUTO inteiro, dentro de ${area(product)}: altura de cerca de ${Math.round((product.y1 - product.y0) * 0.85)}% da imagem, com fundo livre visível acima do ponto mais alto dele (pontas incluídas, abaixo de y ${product.y0}%) e a base apoiada na superfície por volta de y ${product.y1 - 3}%.`,
+    "NENHUM texto, letra, logo, botão ou moldura na imagem.",
+  ];
 }

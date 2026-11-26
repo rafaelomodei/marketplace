@@ -23,3 +23,10 @@ export function reportError(e: unknown) {
   const message = offline ? "Não foi possível falar com o Studio. Verifique se ele está rodando e tente de novo." : internal ? "Algo deu errado nesta tela. Tente de novo; se continuar, recarregue a página." : (e as Error).message;
   window.dispatchEvent(new CustomEvent("studio:error", { detail: message }));
 }
+
+/** Runs a studio action by name (same as an MCP tool call). */
+export const action = <T = any>(name: string, input: unknown = {}) => api<T>(`/api/actions/${name}`, { method: "POST", json: input });
+
+/** Picture of a library file: the slicer's plate picture, or a render of the model. */
+export const libraryPictureUrl = (slug: string, file: string, plate = 1, w = 480, v = "") =>
+  `/api/library/${encodeURIComponent(slug)}/picture?file=${encodeURIComponent(file)}&plate=${plate}&w=${w}${v ? `&v=${encodeURIComponent(v)}` : ""}`;

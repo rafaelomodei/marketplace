@@ -5,14 +5,22 @@ export const ROOT = path.resolve(process.env.STUDIO_ROOT ?? process.cwd());
 export const PRODUCTS_DIR = path.join(ROOT, "products");
 export const DATA_DIR = path.join(ROOT, "data");
 export const CONFIG_DIR = path.join(ROOT, "config");
+/** Print-file library (STL/3MF projects), outside the app folder so it survives reinstalls. */
+export const LIBRARY_DIR = path.resolve(process.env.STUDIO_LIBRARY ?? path.join(os.homedir(), "VerdeForma", "biblioteca"));
+/** Where the browser saves downloads (MakerWorld etc.): the library's inbox. */
+export const DOWNLOADS_DIR = path.resolve(process.env.STUDIO_DOWNLOADS ?? path.join(os.homedir(), "Downloads"));
 export const SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-image", "SKILL.md");
 export const SOCIAL_SKILL_FILE = path.join(ROOT, "skills", "verde-forma-social", "SKILL.md");
-export const SOCIAL_DIRECTION_FILE = path.join(ROOT, "skills", "verde-forma-social", "references", "direcao-de-arte.md");
-export const SOCIAL_LOGO_DIR = path.join(ROOT, "skills", "verde-forma-social", "assets", "logos", "rendered");
-export const SOCIAL_REFERENCE_FILE = path.resolve(
-  process.env.VERDE_FORMA_SOCIAL_REFERENCE ??
-    path.join(ROOT, "skills", "verde-forma-social", "assets", "referencia-post-vela-2-anos.png"),
-);
+/** Official signature (logo + name). Never sent to the image model: pasted by code after generation (lib/social-design.ts). */
+export const SOCIAL_SIGNATURE_FILE = path.join(ROOT, "skills", "verde-forma-social", "assets", "logos", "oficial", "assinatura-verdeforma.png");
+const fontFile = (pkg: string, file: string) => path.join(ROOT, "node_modules", "@fontsource", pkg, "files", file);
+/** Brand fonts for the texts drawn by code on social pieces (lib/social-design.ts). */
+export const BRAND_FONTS = {
+  title: fontFile("playfair-display", "playfair-display-latin-400-normal.woff"),
+  emphasis: fontFile("playfair-display", "playfair-display-latin-400-italic.woff"),
+  body: fontFile("poppins", "poppins-latin-400-normal.woff"),
+  cta: fontFile("poppins", "poppins-latin-500-normal.woff"),
+} as const;
 export const FACTS_ASSIST_SKILL_FILE = path.join(ROOT, "skills", "marketplace-product-facts", "SKILL.md");
 export const CODEX_BIN = process.env.CODEX_BIN ?? "codex";
 export const CODEX_HOME = process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");

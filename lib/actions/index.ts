@@ -3,11 +3,13 @@ import { describeAction, runAction, type Action } from "./define";
 import * as g from "./generation";
 import * as p from "./products";
 import * as l from "./listing";
+import * as lib from "./library";
 
 export { defineAction, describeAction, runAction, type Action } from "./define";
 export * from "./generation";
 export * from "./products";
 export * from "./listing";
+export * from "./library";
 
 /**
  * Every studio operation, keyed by its stable name. The API routes call these, and a future
@@ -18,6 +20,7 @@ const ALL = [
   p.getProductAction,
   p.getNextStepAction,
   p.openExportFolderAction,
+  p.openApprovedFolderAction,
   p.createProductAction,
   p.updateProductAction,
   p.moveProductAction,
@@ -43,6 +46,28 @@ const ALL = [
   g.reframeImageAction,
   g.correctImageAction,
   g.exportImagesAction,
+  lib.listLibraryAction,
+  lib.setLibraryFileUnitsAction,
+  lib.standardizeLibraryFileNamesAction,
+  lib.getLibraryStudioAction,
+  lib.openInImageStudioAction,
+  lib.addModelViewsAction,
+  lib.getProductLibraryAction,
+  lib.getLibraryProjectAction,
+  lib.createLibraryProjectAction,
+  lib.updateLibraryProjectAction,
+  lib.archiveLibraryProjectAction,
+  lib.addLibraryFilesAction,
+  lib.moveLibraryFileAction,
+  lib.removeLibraryFileAction,
+  lib.printLibraryFileAction,
+  lib.recalculateLibraryFileAction,
+  lib.openLibraryFolderAction,
+  lib.listDownloadsAction,
+  lib.importDownloadsAction,
+  lib.dismissDownloadsAction,
+  lib.getLibrarySettingsAction,
+  lib.updateLibrarySettingsAction,
 ] as unknown as Action[];
 
 export const ACTIONS: Record<string, Action> = Object.fromEntries(ALL.map((a) => [a.name, a]));

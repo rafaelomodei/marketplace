@@ -136,6 +136,14 @@ export function PublishStep({ product, config, reload, preview, goTo }: StepProp
           <Button variant="primary" size="lg" className="w-full" disabled={!fileCount || busy === "export"} onClick={exportSelected}>
             {busy === "export" ? <Spinner /> : <Icon icon={Download} />} Preparar {fileCount} {fileCount === 1 ? "arquivo" : "arquivos"}
           </Button>
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={busy === "approved-folder"}
+            onClick={() => run("approved-folder", () => api("/api/actions/open_approved_folder", { method: "POST", json: { slug: product.slug } }))}
+          >
+            {busy === "approved-folder" ? <Spinner /> : <Icon icon={FolderOpen} />} Abrir pasta das imagens aprovadas
+          </Button>
           {done !== null && (
             <Alert tone="success" onClose={() => setDone(null)}>
               <div className="space-y-3">
