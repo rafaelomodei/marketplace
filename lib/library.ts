@@ -3,9 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { computeCost, extraSchema, getCostSettings, type CostBreakdown } from "./costing";
-import { DATA_DIR, DOWNLOADS_DIR, LIBRARY_DIR } from "./paths";
 import { type Dimensions, inspect3mf, type Measure, measureModel, MODEL_EXT, plateImage, renderPreview, stlTriangles, threeMfTriangles, type ThreeMfInfo } from "./print-files";
-import { HttpError } from "./products";
+import { DATA_DIR, DOWNLOADS_DIR, IMAGE_EXT, LIBRARY_DIR, SUBDIRS } from "./paths";
+import { HttpError, locateProduct, productFile } from "./products";
 import { findSlicer, openInSlicer, sliceFile, type SliceStats } from "./slicer";
 import { followsStandard, slugify, standardFileBase } from "./text";
 
@@ -34,12 +34,25 @@ export const salePriceSchema = z.object({
 });
 export type SalePrice = z.infer<typeof salePriceSchema>;
 
+/** Cover from a print file: a plate picture of a 3MF (or the render of an STL). */
+export const fileCoverSchema = z.object({ file: z.string().min(1), plate: z.number().int().positive().default(1) });
+/** Cover from the linked studio product: a photo sent by the seller (real/…) or an approved image (approved/…). */
+export const imageCoverSchema = z.object({ image: z.string().min(1) });
+/** The chosen cover; older projects only have the file form. Nothing chosen = the first plate of a ready file. */
+export const coverSchema = z.union([fileCoverSchema, imageCoverSchema]);
+export type Cover = z.infer<typeof coverSchema>;
+export type FileCover = z.infer<typeof fileCoverSchema>;
+export const isFileCover = (c: Cover | null | undefined): c is FileCover => !!c && "file" in c;
+
+/** Folders of the studio product a library cover may come from. */
+const COVER_IMAGE_DIRS = [SUBDIRS.real, SUBDIRS.approved] as const;
+
 export const projectMetaSchema = z.object({
   name: z.string().trim().min(1),
   categories: z.array(z.string().trim().min(1)).default([]),
   sourceUrl: z.string().trim().default(""),
   notes: z.string().default(""),
-  cover: z.object({ file: z.string(), plate: z.number().int().positive().default(1) }).nullable().default(null),
+  cover: coverSchema.nullable().catch(null).default(null),
   /** Bought items that go with each piece (key ring, bag, box…), with their unit cost. */
   extras: z.array(extraSchema).default([]),
   /** Assembly/finishing/packing minutes; empty = the default from the cost settings. */
@@ -147,7 +160,9 @@ export type ProjectSummary = {
   name: string;
   categories: string[];
   sourceUrl: string;
-  cover: { file: string; plate: number } | null;
+  cover: Cover | null;
+  /** Pictures the card can go through: the cover, the 3MF plates and the photos sent (see `projectPictures`). */
+  pictures: number;
   files: { source: number; print: number };
   /** The first ready-to-print file: what this piece costs. */
   object: ObjectSize;
@@ -270,7 +285,7 @@ function relocate(slug: string, rel: string, sub: string, name: string): string 
   const meta = readProjectMeta(slug);
   const { [rel]: units, ...yields } = meta.yields;
   updateProject(slug, {
-    cover: meta.cover?.file === rel ? { ...meta.cover, file: next } : meta.cover,
+    cover: isFileCover(meta.cover) && meta.cover.file === rel ? { ...meta.cover, file: next } : meta.cover,
     yields: units ? { ...yields, [next]: units } : yields,
   });
   return next;
@@ -300,7 +315,7 @@ export function removeProjectFile(slug: string, rel: string) {
   fs.renameSync(abs, path.join(trash, freeName(trash, path.basename(abs))));
   const meta = readProjectMeta(slug);
   const { [rel]: _, ...yields } = meta.yields;
-  updateProject(slug, { cover: meta.cover?.file === rel ? null : meta.cover, yields });
+  updateProject(slug, { cover: isFileCover(meta.cover) && meta.cover.file === rel ? null : meta.cover, yields });
   return { ok: true };
 }
 
@@ -445,16 +460,22 @@ function listFiles(slug: string, meta: ProjectMeta): LibraryFile[] {
   });
 }
 
-/** The picture of a project: the chosen cover, else the first plate of a ready file, else any model. */
-function coverOf(meta: ProjectMeta, files: LibraryFile[]) {
-  if (meta.cover && files.some((f) => f.rel === meta.cover!.file)) return meta.cover;
+/** The picture of a project: the chosen cover (if it still exists), else the first plate of a ready file, else any model. */
+function coverOf(meta: ProjectMeta, files: LibraryFile[]): Cover | null {
+  const c = meta.cover;
+  if (isFileCover(c) ? files.some((f) => f.rel === c.file) : c && studioImageFile(meta, c.image)) return c;
+  return defaultCover(files);
+}
+
+/** The cover when nothing (valid) was chosen: the first plate with a picture of a ready file, else any model. */
+function defaultCover(files: LibraryFile[]): FileCover | null {
   const pick = files.find((f) => f.folder === "print" && f.info?.plates.some((p) => p.thumb)) ?? files.find((f) => f.type !== "other");
   return pick ? { file: pick.rel, plate: pick.info?.plates.find((p) => p.thumb)?.plate ?? 1 } : null;
 }
 
 /** The object's size: informed by hand, else measured in the cover file, a ready file or any model (first single-piece one). */
-function objectSize(meta: ProjectMeta, files: LibraryFile[], cover: { file: string } | null): ObjectSize {
-  const order = [...files.filter((f) => f.rel === cover?.file), ...files.filter((f) => f.folder === "print"), ...files].filter((f) => f.measure);
+function objectSize(meta: ProjectMeta, files: LibraryFile[], cover: Cover | null): ObjectSize {
+  const order = [...files.filter((f) => isFileCover(cover) && f.rel === cover.file), ...files.filter((f) => f.folder === "print"), ...files].filter((f) => f.measure);
   const pick = order.find((f) => f.measure!.size) ?? order[0];
   const measured = pick ? { file: pick.rel, pieces: pick.measure!.pieces, size: pick.measure!.size } : null;
   // A file with several pieces may hold several copies of the object, so only a single piece says "1 peça" by itself.
@@ -467,7 +488,8 @@ export function getProject(slug: string) {
   const meta = readProjectMeta(slug);
   const files = listFiles(slug, meta);
   const cover = coverOf(meta, files);
-  return { slug, ...meta, cover, files, object: objectSize(meta, files, cover), folder: projectDir(slug) };
+  /** `coverChosen`: the cover was picked by hand (and still exists); otherwise it is the default plate. */
+  return { slug, ...meta, cover, coverChosen: !!meta.cover && cover === meta.cover, files, object: objectSize(meta, files, cover), folder: projectDir(slug) };
 }
 export type Project = ReturnType<typeof getProject>;
 
@@ -487,6 +509,7 @@ export function listProjects(): ProjectSummary[] {
         categories: meta.categories,
         sourceUrl: meta.sourceUrl,
         cover: coverOf(meta, files),
+        pictures: pictureCount(meta, files),
         object: objectSize(meta, files, coverOf(meta, files)),
         salePrices: meta.salePrices,
         variants: files.filter((f) => f.folder === "print").map((f): Variant => {
@@ -563,6 +586,108 @@ export async function filePicture(slug: string, rel: string, plate = 1): Promise
   fs.mkdirSync(path.dirname(cached), { recursive: true });
   fs.writeFileSync(cached, png);
   return png;
+}
+
+/**
+ * A picture of the linked studio product (`real/x.jpg`, `approved/y.png`), or null when there is no linked product,
+ * the path is outside the photo/approved folders or the file is gone.
+ */
+function studioImageFile(meta: ProjectMeta, image: string): string | null {
+  if (!meta.product || !IMAGE_EXT.test(image) || !COVER_IMAGE_DIRS.some((d) => image.startsWith(`${d}/`)) || !locateProduct(meta.product)) return null;
+  try {
+    const abs = productFile(meta.product, image);
+    return fs.existsSync(abs) ? abs : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Absolute path of a studio picture of a project (for the picture endpoint). */
+export function projectImageFile(slug: string, image: string): string {
+  const abs = studioImageFile(readProjectMeta(slug), image);
+  if (!abs) throw new HttpError(404, "Imagem não encontrada");
+  return abs;
+}
+
+/** Image files of one folder of the linked studio product, as paths inside the product (`real/foto.jpg`). */
+function studioImages(meta: ProjectMeta, sub: (typeof COVER_IMAGE_DIRS)[number]): string[] {
+  const found = meta.product ? locateProduct(meta.product) : null;
+  if (!found) return [];
+  try {
+    return fs
+      .readdirSync(path.join(found.dir, sub), { withFileTypes: true })
+      .filter((e) => e.isFile() && IMAGE_EXT.test(e.name))
+      .map((e) => path.posix.join(sub, e.name))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  } catch {
+    return [];
+  }
+}
+
+/** One picture a project can show (and use as its cover). */
+export type ProjectPicture =
+  | { source: "file"; file: string; plate: number; label: string; version: string; cover: boolean }
+  | { source: "photo" | "generated"; image: string; label: string; version: string; cover: boolean };
+
+const sameCover = (a: Cover | null, p: ProjectPicture) =>
+  !!a && (isFileCover(a) ? p.source === "file" && p.file === a.file && p.plate === a.plate : p.source !== "file" && p.image === a.image);
+
+function fileFrames(files: LibraryFile[], all: boolean): ProjectPicture[] {
+  const ordered = [...files.filter((f) => f.folder === "print"), ...files.filter((f) => f.folder !== "print")];
+  // The file name only matters when there is more than one file to tell apart.
+  const named = ordered.filter((f) => f.type !== "other").length > 1;
+  return ordered.flatMap((f): ProjectPicture[] => {
+    const plates = f.info?.plates.filter((p) => p.thumb) ?? [];
+    const base = { source: "file" as const, file: f.rel, version: f.modifiedAt, cover: false };
+    const label = (p: { plate: number; name: string | null }) => [named && f.name, `Mesa ${p.plate}`, p.name].filter(Boolean).join(" · ");
+    if (plates.length) return plates.map((p) => ({ ...base, plate: p.plate, label: label(p) }));
+    // Files without a slicer picture need a 3D render: only where it is worth the wait (the project page).
+    return all && f.type !== "other" ? [{ ...base, plate: 1, label: f.name }] : [];
+  });
+}
+
+/**
+ * Every picture of a project, the cover first: the plates of its print files, the photos sent to its studio product
+ * and — with `generated` — the images approved in the studio. Without `all`, only the cheap ones (plates with a slicer
+ * picture and photos), as the library card shows; an image from the studio still shows when it is the cover.
+ */
+export function projectPictures(slug: string, { all = true }: { all?: boolean } = {}): { cover: Cover | null; pictures: ProjectPicture[] } {
+  const meta = readProjectMeta(slug);
+  const files = listFiles(slug, meta);
+  const cover = coverOf(meta, files);
+  const stamp = (image: string) => {
+    try { return String(Math.round(fs.statSync(studioImageFile(meta, image)!).mtimeMs)); } catch { return ""; }
+  };
+  const studio = (sub: (typeof COVER_IMAGE_DIRS)[number], source: "photo" | "generated", label: string) =>
+    studioImages(meta, sub).map((image, i): ProjectPicture => ({ source, image, label: `${label} ${i + 1}`, version: stamp(image), cover: false }));
+  const generated = studio(SUBDIRS.approved, "generated", "Imagem do estúdio");
+  const pictures = [
+    ...fileFrames(files, all),
+    ...studio(SUBDIRS.real, "photo", "Foto"),
+    ...(all ? generated : generated.filter((p) => sameCover(cover, p))),
+  ];
+  const first = pictures.findIndex((p) => sameCover(cover, p));
+  // A chosen render of a file without slicer pictures is not in the cheap list: keep it first anyway.
+  const lead: ProjectPicture[] = first >= 0 ? pictures.splice(first, 1) : isFileCover(cover) ? fileFrames(files.filter((f) => f.rel === cover.file), true).slice(0, 1) : [];
+  return { cover, pictures: [...lead.map((p) => ({ ...p, cover: true })), ...pictures] };
+}
+
+/** How many pictures the library card can go through (same as `projectPictures(slug, { all: false })`, cheaper). */
+function pictureCount(meta: ProjectMeta, files: LibraryFile[]): number {
+  const cover = coverOf(meta, files);
+  const plates = files.reduce((n, f) => n + (f.info?.plates.filter((p) => p.thumb).length ?? 0), 0);
+  const coverInPlates = isFileCover(cover) && files.some((f) => f.rel === cover.file && f.info?.plates.some((p) => p.plate === cover.plate && p.thumb));
+  const generatedCover = !!cover && !isFileCover(cover) && cover.image.startsWith(`${SUBDIRS.approved}/`);
+  return plates + studioImages(meta, SUBDIRS.real).length + (generatedCover || (isFileCover(cover) && !coverInPlates) ? 1 : 0);
+}
+
+/** Chooses the cover of a project (null = back to the default: the first plate of a ready file). */
+export function setProjectCover(slug: string, cover: Cover | null): Cover | null {
+  const meta = readProjectMeta(slug);
+  if (isFileCover(cover) && !fs.existsSync(projectFile(slug, cover.file))) throw new HttpError(404, "Arquivo não encontrado");
+  if (cover && !isFileCover(cover) && !studioImageFile(meta, cover.image)) throw new HttpError(404, "Imagem não encontrada no estúdio deste projeto");
+  updateProject(slug, { cover });
+  return coverOf(readProjectMeta(slug), listFiles(slug, readProjectMeta(slug)));
 }
 
 // ------------------------------------------------------------------------------------------------------- actions

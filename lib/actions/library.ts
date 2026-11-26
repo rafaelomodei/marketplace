@@ -5,6 +5,7 @@ import {
   addProjectFiles,
   allCategories,
   archiveProject,
+  coverSchema,
   createProject,
   dismissInbox,
   getProject,
@@ -14,9 +15,11 @@ import {
   moveProjectFile,
   printFile,
   projectDir,
+  projectPictures,
   recalculate,
   removeProjectFile,
   setFileUnits,
+  setProjectCover,
   salePriceSchema,
   standardizeFileNames,
   updateProject,
@@ -70,7 +73,7 @@ export const updateLibraryProjectAction = defineAction({
     categories: z.array(z.string().trim().min(1)).optional(),
     sourceUrl: z.string().trim().optional(),
     notes: z.string().optional(),
-    cover: z.object({ file, plate: z.number().int().positive().default(1) }).nullable().optional(),
+    cover: coverSchema.nullable().optional().describe("Prefira set_library_cover"),
     extras: z.array(extraSchema).optional(),
     laborMinutes: z.number().nonnegative().nullable().optional(),
     size: z
@@ -85,6 +88,30 @@ export const updateLibraryProjectAction = defineAction({
     pieces: z.number().int().positive().nullable().optional().describe("Quantas peças impressas formam UM objeto pronto (ex.: foto + moldura + laço = 3); define quantos objetos cada impressão rende"),
   }),
   run: ({ project, ...patch }) => updateProject(project, patch),
+});
+
+export const listLibraryPicturesAction = defineAction({
+  name: "list_library_pictures",
+  title: "Ver imagens do projeto",
+  description:
+    "Imagens que podem ser a capa do projeto, a capa primeiro: mesas dos arquivos 3MF (source=file, com file e plate), fotos enviadas do produto (source=photo) e imagens aprovadas no estúdio de imagens (source=generated, com image). all=false traz só as leves (mesas com imagem do fatiador e fotos), como no card da biblioteca.",
+  input: z.object({ project, all: z.boolean().default(true) }),
+  readOnly: true,
+  run: ({ project, all }) => projectPictures(project, { all }),
+});
+
+export const setLibraryCoverAction = defineAction({
+  name: "set_library_cover",
+  title: "Escolher capa",
+  description:
+    "Define a imagem de capa do projeto (aparece no card da biblioteca): uma mesa de um arquivo ({file, plate}), uma foto enviada ou imagem gerada no estúdio ({image}, caminho como em list_library_pictures). null volta ao padrão: a primeira mesa de um arquivo pronto para imprimir.",
+  input: z.object({
+    project,
+    cover: coverSchema
+      .nullable()
+      .describe("{file:'fatiados/x.3mf', plate:2} ou {image:'real/foto.jpg' | 'approved/cena.png'}; null = padrão do 3MF"),
+  }),
+  run: ({ project, cover }) => ({ cover: setProjectCover(project, cover) }),
 });
 
 export const archiveLibraryProjectAction = defineAction({

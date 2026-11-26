@@ -12,7 +12,7 @@ type Studio = { product: string | null; photos: { id: number; rel: string }[]; g
  * The project's side in the image studio: product photos sent from here, the 3D model as reference pictures and
  * the way into the studio. The studio product is created on first use, with the project's name, size and price.
  */
-export function StudioSection({ project, singlePiece }: { project: string; singlePiece: boolean }) {
+export function StudioSection({ project, singlePiece, onChanged }: { project: string; singlePiece: boolean; /** Photos were added. */ onChanged?: () => void }) {
   const router = useRouter();
   const [studio, setStudio] = useState<Studio | null>(null);
   const [busy, setBusy] = useState<"upload" | "views" | "open" | null>(null);
@@ -27,6 +27,7 @@ export function StudioSection({ project, singlePiece }: { project: string; singl
     try {
       await work();
       await load();
+      onChanged?.();
     } catch (e) {
       reportError(e);
     } finally {

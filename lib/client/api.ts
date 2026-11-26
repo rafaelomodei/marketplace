@@ -30,3 +30,9 @@ export const action = <T = any>(name: string, input: unknown = {}) => api<T>(`/a
 /** Picture of a library file: the slicer's plate picture, or a render of the model. */
 export const libraryPictureUrl = (slug: string, file: string, plate = 1, w = 480, v = "") =>
   `/api/library/${encodeURIComponent(slug)}/picture?file=${encodeURIComponent(file)}&plate=${plate}&w=${w}${v ? `&v=${encodeURIComponent(v)}` : ""}`;
+
+/** Any picture of a library project — a plate of a file or a studio image (cover, gallery) — `w` px wide. */
+export const projectPictureUrl = (slug: string, pic: { file: string; plate: number } | { image: string }, w = 480, v = "") =>
+  "file" in pic
+    ? libraryPictureUrl(slug, pic.file, pic.plate, w, v)
+    : `/api/library/${encodeURIComponent(slug)}/picture?image=${encodeURIComponent(pic.image)}&w=${w}${v ? `&v=${encodeURIComponent(v)}` : ""}`;

@@ -56,6 +56,8 @@ const ALL = [
   lib.getLibraryProjectAction,
   lib.createLibraryProjectAction,
   lib.updateLibraryProjectAction,
+  lib.listLibraryPicturesAction,
+  lib.setLibraryCoverAction,
   lib.archiveLibraryProjectAction,
   lib.addLibraryFilesAction,
   lib.moveLibraryFileAction,
