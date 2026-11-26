@@ -14,7 +14,9 @@ fs.mkdirSync(process.env.STUDIO_DOWNLOADS, { recursive: true });
 
 const { parseGcodeStats, parseDuration } = await import("@/lib/slicer");
 const { computeCost, costSettingsSchema } = await import("@/lib/costing");
-const { inspect3mf, measureModel, stlTriangles, threeMfTriangles } = await import("@/lib/print-files");
+const { inspect3mf, measureModel, measureModelFile, modelMeshesFile, plateImage, stlTriangles, threeMfItems, threeMfTriangles } = await import("@/lib/print-files");
+const { Zip } = await import("@/lib/zip");
+const { rasterize } = await import("@/lib/raster");
 const lib = await import("@/lib/library");
 
 const settings = costSettingsSchema.parse({});
@@ -183,7 +185,8 @@ describe("library folders", () => {
     expect(() => lib.importFromInbox(["../segredo.stl"])).toThrow();
   });
 
-  it("measures size, keeps sale prices per object with kits by quantity", () => {
+  it("measures size, keeps sale prices per object with kits by quantity", async () => {
+    await lib.whenIdle();
     const slug = "vaso-colmeia";
     expect(lib.getProject(slug).object).toMatchObject({ size: { width: 10, depth: 10, height: 0 }, pieces: 1, source: "model" });
     const rel = "fatiados/vasoColmeia_Ender3V3.3mf";
@@ -264,3 +267,150 @@ describe("library ↔ image studio", () => {
   });
 });
 
+// ------------------------------------------------------------------------------------- light reading of big files
+
+/** A Creality/Bambu-style 3MF: the root only places objects; each mesh lives in its own part under 3D/Objects. */
+function splitModel(items: number, mesh: string) {
+  const build = Array.from({ length: items }, (_, i) => `<item objectid="10" transform="1 0 0 0 1 0 0 0 1 ${i * 50} 0 0"/>`).join("");
+  return zipSync({
+    "3D/3dmodel.model": strToU8(`<model xmlns:p="p"><resources><object id="10" type="model"><components><component p:path="/3D/Objects/object_1.model" objectid="1" transform="2 0 0 0 1 0 0 0 1 0 0 3"/></components></object></resources><build>${build}</build></model>`),
+    "3D/Objects/object_1.model": strToU8(mesh),
+  });
+}
+const MESH = `<model><resources><object id="1" type="model"><mesh><vertices>
+<vertex x="0" y="0" z="0"/><vertex y='4' x="1e1" z="-0"/><vertex x="-2.5" y="0" z="7.25E+0"/>
+</vertices><triangles><triangle v1="0" v2="1" v3="2"/></triangles></mesh></object></resources></model>`;
+
+describe("light reading of print files", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "print-files-"));
+  const write = (name: string, data: Uint8Array) => (fs.writeFileSync(path.join(dir, name), data), path.join(dir, name));
+
+  it("reads single zip entries from disk, stored or deflated", async () => {
+    const file = write("a.3mf", zipSync({ "a.txt": [strToU8("olá"), { level: 0 }], "b/c.txt": strToU8("x".repeat(10_000)) }));
+    const zip = new Zip(file);
+    try {
+      expect(zip.names()).toEqual(["a.txt", "b/c.txt"]);
+      expect(zip.text("a.txt")).toBe("olá");
+      expect(zip.read("b/c.txt")?.length).toBe(10_000);
+      expect(zip.read("nope")).toBeNull();
+    } finally {
+      zip.close();
+    }
+    expect(() => new Zip(write("broken.3mf", strToU8("not a zip")))).toThrow();
+  });
+
+  it("gives the same profiles and plate picture from a path as from bytes", async () => {
+    const data = await threeMf(true);
+    const file = write("configured.3mf", data);
+    expect(inspect3mf(file)).toEqual(inspect3mf(data));
+    expect(plateImage(file, "Metadata/plate_1.png")?.equals(plateImage(data, "Metadata/plate_1.png")!)).toBe(true);
+  });
+
+  it("parses vertices in any attribute order, quotes and number format", () => {
+    const soup = threeMfItems(splitModel(1, MESH))[0];
+    // object scaled ×2 on x and raised 3 mm by the component
+    expect(Array.from(soup)).toEqual([0, 0, 3, 20, 4, 3, -5, 0, 10.25]);
+  });
+
+  it("counts several pieces without reading their meshes", async () => {
+    // A broken mesh part would make the parse fail if it were read; with 3 pieces it never is.
+    const many = splitModel(3, "<model><resources><object id=\"1\"><mesh><vertices><vertex x=\"oops");
+    expect(measureModel(many, "3mf")).toEqual({ pieces: 3, size: null });
+    expect(await measureModelFile(write("many.3mf", many), "3mf")).toEqual({ pieces: 3, size: null });
+  });
+
+  it("measures a single piece from disk like from bytes, through components in other parts", async () => {
+    const one = splitModel(1, MESH);
+    expect(measureModel(one, "3mf")).toEqual({ pieces: 1, size: { width: 25, depth: 4, height: 7.3 } });
+    expect(await measureModelFile(write("one.3mf", one), "3mf")).toEqual(measureModel(one, "3mf"));
+    expect(await measureModelFile(write("one.stl", stl()), "stl")).toEqual({ pieces: 1, size: { width: 1, depth: 1, height: 1 } });
+  });
+
+  it("draws indexed meshes exactly like the same triangle soup", async () => {
+    const [mesh] = await modelMeshesFile(write("draw.3mf", splitModel(1, MESH)), "3mf");
+    expect(mesh.index).toBeInstanceOf(Uint32Array);
+    const view = { azimuth: -30, elevation: 32 };
+    const o = { width: 64, height: 64, background: "#ffffff" };
+    const indexed = rasterize([{ ...mesh, color: "#c9a132" }], view, o);
+    const soup = rasterize([{ soup: threeMfTriangles(splitModel(1, MESH)), color: "#c9a132" }], view, o);
+    expect(Buffer.from(indexed).equals(Buffer.from(soup))).toBe(true);
+    expect(indexed.some((v, i) => i % 4 === 0 && v !== 255)).toBe(true);
+  });
+});
+
+describe("library background work", () => {
+  it("measures new files in the background, once per version", async () => {
+    const slug = lib.createProject("Presépio grande");
+    lib.addProjectFiles(slug, [{ name: "presepio.3mf", data: splitModel(1, MESH) }]);
+    const first = lib.getProject(slug).files[0];
+    expect(first.measuring).toBe(true);
+    expect(first.measure).toBeNull();
+    await lib.whenIdle();
+    const after = lib.getProject(slug).files[0];
+    expect(after).toMatchObject({ measuring: false, measure: { pieces: 1, size: { width: 25, depth: 4, height: 7.3 } } });
+    expect(lib.listProjects().find((p) => p.slug === slug)?.calculating).toBe(false);
+  });
+
+  it("keeps pictures on disk per file version and width, dropping older versions", async () => {
+    const slug = lib.createProject("Foto em cache");
+    const [rel] = lib.addProjectFiles(slug, [{ name: "x.3mf", data: await threeMf(true) }]);
+    const pics = path.join(process.env.STUDIO_LIBRARY!, slug, ".studio", "pictures");
+    const png = await lib.filePicture(slug, rel, 1, 4);
+    expect((await sharp(png).metadata()).width).toBe(4);
+    expect(fs.readdirSync(pics)).toHaveLength(1);
+    expect((await lib.filePicture(slug, rel, 1, 4)).equals(png)).toBe(true);
+    await lib.filePicture(slug, rel, 2, 0);
+    expect(fs.readdirSync(pics)).toHaveLength(2);
+    // the file is saved again: new pictures, the old ones go away
+    const abs = lib.projectFile(slug, rel);
+    fs.utimesSync(abs, new Date(), new Date(Date.now() + 5000));
+    await lib.filePicture(slug, rel, 1, 4);
+    expect(fs.readdirSync(pics)).toHaveLength(1);
+    // a model without plate pictures is rendered once, then served from disk
+    const [stlRel] = lib.addProjectFiles(slug, [{ name: "x.stl", data: stl() }]);
+    const render = await lib.filePicture(slug, stlRel, 1, 32);
+    expect((await sharp(render).metadata()).width).toBe(32);
+    expect(fs.readdirSync(pics).filter((f) => f.endsWith("-render.png"))).toHaveLength(1);
+  });
+
+  it("slices one file at a time, on disk, and computes the cost", async () => {
+    const { setSlicerSettings } = await import("@/lib/slicer");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fake-slicer-"));
+    const log = path.join(dir, "slicer.log");
+    const fake = path.join(dir, "CrealityPrint-fake.sh");
+    fs.writeFileSync(fake, [
+      "#!/bin/sh",
+      `echo "start $4" >> "${log}"`,
+      "sleep 0.3",
+      `printf '; filament used [g] = 12.5\\n; estimated printing time (normal mode) = 1h 0m 0s\\n; filament_type = PLA\\n; filament_colour = #FFFFFF\\n; filament_cost = 100\\n; printer_settings_id = Creality Ender-3 V3 0.4 nozzle\\n' > "$4/plate_1.gcode"`,
+      `echo "end" >> "${log}"`,
+    ].join("\n"));
+    fs.chmodSync(fake, 0o755);
+    setSlicerSettings({ path: fake });
+    try {
+      const slug = lib.createProject("Fila de fatiamento");
+      lib.addProjectFiles(slug, [{ name: "a.3mf", data: await threeMf(true) }, { name: "b.3mf", data: await threeMf(true) }]);
+      const files = lib.getProject(slug).files;
+      expect(files.map((f) => f.slice?.status)).toEqual(["queued", "queued"]);
+      await lib.whenIdle();
+      const lines = fs.readFileSync(log, "utf8").trim().split("\n");
+      // never two slices at once: start, end, start, end
+      expect(lines.map((l) => l.split(" ")[0])).toEqual(["start", "end", "start", "end"]);
+      // the G-code goes to the app's data folder (on disk), not the system temp folder (often in memory)
+      expect(lines[0]).toContain(path.join(process.env.STUDIO_ROOT!, "data", "slicing"));
+      expect(fs.readdirSync(path.join(process.env.STUDIO_ROOT!, "data", "slicing"))).toEqual([]);
+      const done = lib.getProject(slug).files.map((f) => f.slice);
+      expect(done.every((s) => s?.status === "done")).toBe(true);
+      const s = done[0]!;
+      if (s.status !== "done") throw new Error("not done");
+      expect(s.stats).toMatchObject({ grams: [12.5], seconds: 3600 });
+      expect(s.cost.total).toBeGreaterThan(0);
+      // the same version is not sliced again
+      lib.getProject(slug);
+      await lib.whenIdle();
+      expect(fs.readFileSync(log, "utf8").trim().split("\n")).toHaveLength(4);
+    } finally {
+      setSlicerSettings({ path: "" });
+    }
+  });
+});

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
+import { DATA_DIR } from "./paths";
 import { HttpError } from "./products";
 import { readSettings, writeSettings } from "./settings";
 
@@ -113,14 +114,28 @@ function readTail(file: string, bytes = 3 * 1024 * 1024): string {
   }
 }
 
-/** Slices every plate of a 3MF with its own settings, in the background (no window), and reads the statistics. */
+/**
+ * Where the slicer writes its G-code while slicing: on disk, in the app's data folder. Not the system temp folder,
+ * which is often kept in memory (tmpfs) — a detailed model makes a G-code of hundreds of MB.
+ */
+const sliceDir = () => {
+  const dir = path.join(DATA_DIR, "slicing");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+};
+
+/**
+ * Slices every plate of a 3MF with its own settings, in the background (no window), and reads the statistics.
+ * The slicer runs with low priority, so the computer (and the browser) stay responsive while it works.
+ */
 export async function sliceFile(file: string, timeoutMs = 10 * 60_000): Promise<SliceStats> {
   const s = requireSlicer();
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), "studio-slice-"));
+  const out = fs.mkdtempSync(path.join(sliceDir(), "slice-"));
   try {
     const log = await new Promise<string>((resolve, reject) => {
       let text = "";
       const child = spawn(s.command, [...s.args, "--slice", "0", "--outputdir", out, file], { stdio: ["ignore", "pipe", "pipe"] });
+      if (child.pid) try { os.setPriority(child.pid, 15); } catch { /* not allowed: keeps normal priority */ }
       const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
       const keep = (d: Buffer) => (text = (text + d.toString()).slice(-4000));
       child.stdout.on("data", keep);

@@ -25,6 +25,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { action, reportError } from "@/lib/client/api";
+import { usePolling } from "@/lib/client/use-polling";
 import type { CostSettings } from "@/lib/costing";
 import type { Project, ProjectMeta } from "@/lib/library";
 import { formatSize } from "@/lib/text";
@@ -61,11 +62,8 @@ export default function ProjectView({ slug }: { slug: string }) {
     action<{ cost: CostSettings }>("get_library_settings").then((s) => setCost(s.cost), reportError);
   }, [reload]);
 
-  const calculating = project?.files.some((f) => f.slice?.status === "queued" || f.slice?.status === "running");
-  useEffect(() => {
-    const t = setInterval(reload, calculating ? 2500 : 8000);
-    return () => clearInterval(t);
-  }, [reload, calculating]);
+  const calculating = project?.files.some((f) => f.measuring || f.slice?.status === "queued" || f.slice?.status === "running");
+  usePolling(reload, calculating ? 2500 : 8000);
 
   const save = async (patch: Partial<ProjectMeta>) => {
     try {

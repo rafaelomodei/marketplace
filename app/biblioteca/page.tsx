@@ -20,6 +20,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import { action, reportError } from "@/lib/client/api";
+import { usePolling } from "@/lib/client/use-polling";
 import type { InboxFile, ProjectSummary } from "@/lib/library";
 import { formatBytes, slugify, whenPtBr } from "@/lib/text";
 
@@ -89,15 +90,16 @@ export default function LibraryPage() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const load = useCallback(() => {
-    action<Library>("list_library").then(setLibrary, reportError);
-    action<InboxFile[]>("list_downloads").then(setInbox, reportError);
-  }, []);
-  useEffect(() => {
-    load();
-    const t = setInterval(load, library?.projects.some((p) => p.calculating) ? 3000 : 10000);
-    return () => clearInterval(t);
-  }, [load, library?.projects.some((p) => p.calculating)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const load = useCallback(
+    () =>
+      Promise.all([
+        action<Library>("list_library").then(setLibrary, reportError),
+        action<InboxFile[]>("list_downloads").then(setInbox, reportError),
+      ]),
+    [],
+  );
+  useEffect(() => void load(), [load]);
+  usePolling(load, library?.projects.some((p) => p.calculating) ? 3000 : 10000);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { z } from "zod";
 import { computeCost, extraSchema, getCostSettings, type CostBreakdown } from "./costing";
 import { DATA_DIR, DOWNLOADS_DIR, LIBRARY_DIR } from "./paths";
-import { type Dimensions, inspect3mf, type Measure, measureModel, MODEL_EXT, plateImage, renderPreview, stlTriangles, threeMfTriangles, type ThreeMfInfo } from "./print-files";
+import { type Dimensions, inspect3mf, type Measure, measureModelFile, MODEL_EXT, modelMeshesFile, plateImage, renderPreview, type ThreeMfInfo } from "./print-files";
 import { HttpError } from "./products";
 import { findSlicer, openInSlicer, sliceFile, type SliceStats } from "./slicer";
 import { followsStandard, slugify, standardFileBase } from "./text";
@@ -16,6 +17,9 @@ import { followsStandard, slugify, standardFileBase } from "./text";
  *   <projeto>/origem/        files as downloaded (STL, 3MF without print settings)
  *   <projeto>/fatiados/      3MF saved by the slicer with printer + filament settings: ready to print
  *   <projeto>/.studio/       cache (file info, slice statistics, pictures) — safe to delete
+ *
+ * Heavy work (sizing a model, slicing) runs once per version of a file (size + mtime) in a background queue that does
+ * one job at a time; requests only read the cache. Pictures are made once per file version and size and kept on disk.
  *
  * File names follow a pattern (see `standardFileBase`): the project name in camelCase plus "_" and the printer for a
  * configured 3MF — vasoColmeia.stl, vasoColmeia_K1Max.3mf — so a file is recognised at a glance inside the slicer.
@@ -84,6 +88,8 @@ export type LibraryFile = {
   slice: SliceState | null;
   /** Pieces in the model and, for a single piece, its exact size (null until measured or for other files). */
   measure: Measure | null;
+  /** The model is being measured in the background (pieces and size come next). */
+  measuring: boolean;
   /** Finished objects one print of this file yields, and where the number came from. */
   units: FileUnits;
   /** The name this file should have by the library pattern, without extension ("vasoColmeia_K1Max"). */
@@ -227,16 +233,15 @@ function freeName(dir: string, name: string) {
   return out;
 }
 
-/** A 3MF saved with printer settings goes to "fatiados" (ready to print); everything else to "origem". */
-export function classify(name: string, data: Uint8Array): FolderKind {
-  if (!/\.3mf$/i.test(name)) return "source";
-  try { return inspect3mf(data).configured ? "print" : "source"; } catch { return "source"; }
+/** What a 3MF says about itself (null for STL and unreadable files). Reads only its small Metadata entries. */
+function infoOf(name: string, data: Uint8Array): ThreeMfInfo | null {
+  if (!/\.3mf$/i.test(name)) return null;
+  try { return inspect3mf(data); } catch { return null; }
 }
 
-/** The printer saved in a 3MF (null for STL, unconfigured or unreadable files). */
-function printerOf(name: string, data: Uint8Array): string | null {
-  if (!/\.3mf$/i.test(name)) return null;
-  try { return inspect3mf(data).printer; } catch { return null; }
+/** A 3MF saved with printer settings goes to "fatiados" (ready to print); everything else to "origem". */
+export function classify(name: string, data: Uint8Array): FolderKind {
+  return infoOf(name, data)?.configured ? "print" : "source";
 }
 
 /** Saves files into a project, named by the library pattern (project name + printer). */
@@ -245,9 +250,10 @@ export function addProjectFiles(slug: string, files: { name: string; data: Uint8
   const meta = readProjectMeta(slug);
   return files.map((f) => {
     if (!MODEL_EXT.test(f.name)) throw new HttpError(400, `Formato não suportado: ${f.name} (use STL ou 3MF)`);
-    const target = path.join(dir, FOLDERS[folder ?? classify(f.name, f.data)]);
+    const info = infoOf(f.name, f.data);
+    const target = path.join(dir, FOLDERS[folder ?? (info?.configured ? "print" : "source")]);
     fs.mkdirSync(target, { recursive: true });
-    const name = freeName(target, `${standardFileBase(meta.name, printerOf(f.name, f.data))}${path.extname(f.name).toLowerCase()}`);
+    const name = freeName(target, `${standardFileBase(meta.name, info?.printer ?? null)}${path.extname(f.name).toLowerCase()}`);
     fs.writeFileSync(path.join(target, name), f.data);
     return path.posix.join(path.basename(target), name);
   });
@@ -306,10 +312,13 @@ export function removeProjectFile(slug: string, rel: string) {
 
 // ---------------------------------------------------------------------------------------------- file info cache
 
+/** `measure` undefined = not measured yet (queued); null = could not be measured. */
 type CacheEntry = { key: string; info: ThreeMfInfo | null; measure?: Measure | null; slice?: { stats: SliceStats; slicedAt: string } | { error: string } };
 
 const fileKey = (st: fs.Stats) => `${st.size}:${Math.round(st.mtimeMs)}`;
-const cacheFile = (slug: string, rel: string) => path.join(projectDir(slug), CACHE, `${crypto.createHash("sha1").update(rel).digest("hex").slice(0, 16)}.json`);
+const hash = (text: string) => crypto.createHash("sha1").update(text).digest("hex").slice(0, 16);
+const cacheFile = (slug: string, rel: string) => path.join(projectDir(slug), CACHE, `${hash(rel)}.json`);
+const modelKind = (rel: string) => (/\.3mf$/i.test(rel) ? "3mf" : /\.stl$/i.test(rel) ? "stl" : null);
 
 function readCache(slug: string, rel: string, key: string): CacheEntry | null {
   try {
@@ -320,57 +329,85 @@ function readCache(slug: string, rel: string, key: string): CacheEntry | null {
   }
 }
 
+/**
+ * What is known about a file, from the cache. A new version only gets its profiles read here (a few KB of the 3MF);
+ * pieces and size are measured in the background queue, never inside a request.
+ */
 function fileInfo(slug: string, rel: string, abs: string, st: fs.Stats): CacheEntry {
   const key = fileKey(st);
-  const cached = readCache(slug, rel, key);
-  if (cached && cached.measure !== undefined) return cached;
-  const kind = /\.3mf$/i.test(rel) ? "3mf" : /\.stl$/i.test(rel) ? "stl" : null;
-  const data = kind ? fs.readFileSync(abs) : null;
-  let info: ThreeMfInfo | null = cached?.info ?? null;
-  if (kind === "3mf" && !cached) try { info = inspect3mf(data!); } catch { /* broken zip: shown as a plain file */ }
-  let measure: Measure | null = null;
-  if (kind) try { measure = measureModel(data!, kind); } catch { /* unreadable mesh: size stays unknown */ }
-  const entry: CacheEntry = { ...cached, key, info, measure };
-  writeJson(cacheFile(slug, rel), entry);
+  let entry = readCache(slug, rel, key);
+  if (!entry) {
+    let info: ThreeMfInfo | null = null;
+    if (modelKind(rel) === "3mf") try { info = inspect3mf(abs); } catch { /* broken zip: shown as a plain file */ }
+    entry = { key, info };
+    writeJson(cacheFile(slug, rel), entry);
+  }
+  if (entry.measure === undefined && modelKind(rel)) enqueue({ slug, rel, key, task: "measure" });
   return entry;
 }
 
-// ------------------------------------------------------------------------------------------------- slicing queue
+/** Saves a result for the version of the file it was computed from (the file may have been saved again meanwhile). */
+function saveResult(item: QueueItem, patch: Partial<CacheEntry>) {
+  const abs = projectFile(item.slug, item.rel);
+  if (!fs.existsSync(abs)) return;
+  const st = fs.statSync(abs);
+  if (fileKey(st) !== item.key) return;
+  writeJson(cacheFile(item.slug, item.rel), { ...fileInfo(item.slug, item.rel, abs, st), ...patch });
+}
 
-type QueueItem = { slug: string; rel: string; key: string };
-const g = globalThis as unknown as { __libraryQueue?: { items: QueueItem[]; running: QueueItem | null } };
-const queue = (g.__libraryQueue ??= { items: [], running: null });
-const same = (a: QueueItem | null, slug: string, rel: string, key: string) => !!a && a.slug === slug && a.rel === rel && a.key === key;
+// ------------------------------------------------------------------------------------------------- work queue
+
+/**
+ * One job at a time, for every project: measuring a model (reads its meshes) and slicing it (the slicer takes GBs
+ * of memory and every core). Jobs are keyed by file version, so the same version is never measured/sliced twice.
+ */
+type QueueItem = { slug: string; rel: string; key: string; task: "measure" | "slice" };
+const g = globalThis as unknown as { __libraryJobs?: { items: QueueItem[]; running: QueueItem | null; idle: (() => void)[] } };
+const queue = (g.__libraryJobs ??= { items: [], running: null, idle: [] });
+const same = (a: QueueItem | null, b: QueueItem) => !!a && a.slug === b.slug && a.rel === b.rel && a.key === b.key && a.task === b.task;
 
 function enqueue(item: QueueItem) {
-  if (same(queue.running, item.slug, item.rel, item.key) || queue.items.some((q) => same(q, item.slug, item.rel, item.key))) return;
+  if (same(queue.running, item) || queue.items.some((q) => same(q, item))) return;
   queue.items.push(item);
   void drain();
+}
+
+/** Resolves when the queue has nothing left to do (tests, scripts). */
+export function whenIdle(): Promise<void> {
+  if (!queue.running && !queue.items.length) return Promise.resolve();
+  return new Promise((resolve) => queue.idle.push(resolve));
 }
 
 async function drain() {
   if (queue.running) return;
   const item = queue.items.shift();
-  if (!item) return;
+  if (!item) {
+    queue.idle.splice(0).forEach((resolve) => resolve());
+    return;
+  }
   queue.running = item;
   try {
     const abs = projectFile(item.slug, item.rel);
-    const st = fs.statSync(abs);
-    if (fileKey(st) === item.key) {
-      const entry = fileInfo(item.slug, item.rel, abs, st);
-      try {
-        entry.slice = { stats: await sliceFile(abs), slicedAt: new Date().toISOString() };
-      } catch (e) {
-        entry.slice = { error: (e as Error).message };
+    if (fs.existsSync(abs) && fileKey(fs.statSync(abs)) === item.key) {
+      if (item.task === "measure") {
+        let measure: Measure | null = null;
+        try { measure = await measureModelFile(abs, modelKind(item.rel)!); } catch { /* unreadable mesh: size stays unknown */ }
+        saveResult(item, { measure });
+      } else {
+        let slice: CacheEntry["slice"];
+        try {
+          slice = { stats: await sliceFile(abs), slicedAt: new Date().toISOString() };
+        } catch (e) {
+          slice = { error: (e as Error).message };
+        }
+        saveResult(item, { slice });
       }
-      // The file may have been saved again while slicing: only keep results for the version that was sliced.
-      if (fs.existsSync(abs) && fileKey(fs.statSync(abs)) === item.key) writeJson(cacheFile(item.slug, item.rel), entry);
     }
   } catch (e) {
-    console.error("[library] slice", item.rel, e);
+    console.error("[library]", item.task, item.rel, e);
   } finally {
     queue.running = null;
-    void drain();
+    setImmediate(() => void drain());
   }
 }
 
@@ -392,9 +429,10 @@ function sliceState(slug: string, rel: string, entry: CacheEntry, meta: ProjectM
     return { status: "done", stats: s, cost, slicedAt: entry.slice.slicedAt };
   }
   if (entry.slice) return { status: "failed", error: entry.slice.error };
-  if (same(queue.running, slug, rel, entry.key)) return { status: "running" };
+  const job: QueueItem = { slug, rel, key: entry.key, task: "slice" };
+  if (same(queue.running, job)) return { status: "running" };
   if (!findSlicer()) return { status: "no-slicer" };
-  enqueue({ slug, rel, key: entry.key });
+  enqueue(job);
   return { status: "queued" };
 }
 
@@ -436,6 +474,7 @@ function listFiles(slug: string, meta: ProjectMeta): LibraryFile[] {
           info: entry.info,
           slice: sliceState(slug, rel, entry, meta),
           measure: entry.measure ?? null,
+          measuring: entry.measure === undefined && !!modelKind(rel),
           units: fileUnits(meta, rel, entry.measure),
           standardBase,
           standardName: followsStandard(e.name, standardBase),
@@ -521,7 +560,7 @@ export function listProjects(): ProjectSummary[] {
               colors: done.stats.filaments.filter((_, i) => (done.stats.grams[i] ?? 0) > 0).map((f) => f.color),
             }
           : null,
-        calculating: files.some((f) => f.slice?.status === "queued" || f.slice?.status === "running"),
+        calculating: files.some((f) => f.measuring || f.slice?.status === "queued" || f.slice?.status === "running"),
         updatedAt: new Date(updated).toISOString(),
       } satisfies ProjectSummary;
     })
@@ -542,27 +581,62 @@ function listProjectsMetaOnly(): ProjectMeta[] {
 
 // -------------------------------------------------------------------------------------------------------- pictures
 
-/** PNG of a plate (the slicer's own picture) or a quick render of the model. Cached next to the file info. */
-export async function filePicture(slug: string, rel: string, plate = 1): Promise<Buffer> {
+const g2 = globalThis as unknown as { __libraryPictures?: { making: Map<string, Promise<Buffer>>; renders: Promise<unknown> } };
+const pictures = (g2.__libraryPictures ??= { making: new Map(), renders: Promise.resolve() });
+
+/** Runs `fn` once per key at a time: requests for the same picture share the work. */
+function once(key: string, fn: () => Promise<Buffer>): Promise<Buffer> {
+  const running = pictures.making.get(key);
+  if (running) return running;
+  const p = fn().finally(() => pictures.making.delete(key));
+  pictures.making.set(key, p);
+  return p;
+}
+
+/** Renders one model at a time (reading a big mesh takes hundreds of MB while it lasts). */
+function oneRenderAtATime<T>(fn: () => Promise<T>): Promise<T> {
+  const p = pictures.renders.then(fn, fn);
+  pictures.renders = p.catch(() => {});
+  return p;
+}
+
+/**
+ * PNG of a plate (the slicer's own picture, read alone from the 3MF) or a quick render of the model, `width` pixels
+ * wide (0 = as is). Made once per file version, plate and width and kept in .studio/pictures; older versions of the
+ * same file are removed when a new one is made.
+ */
+export async function filePicture(slug: string, rel: string, plate = 1, width = 0): Promise<Buffer> {
   const abs = projectFile(slug, rel);
   if (!fs.existsSync(abs)) throw new HttpError(404, "Arquivo não encontrado");
-  const st = fs.statSync(abs);
-  const entry = fileInfo(slug, rel, abs, st);
-  const thumb = entry.info?.plates.find((p) => p.plate === plate)?.thumb ?? entry.info?.plates.find((p) => p.thumb)?.thumb;
-  if (thumb) {
-    const png = plateImage(fs.readFileSync(abs), thumb);
-    if (png) return png;
-  }
-  const cached = path.join(projectDir(slug), CACHE, `${crypto.createHash("sha1").update(`${rel}:${entry.key}`).digest("hex").slice(0, 16)}.png`);
-  if (fs.existsSync(cached)) return fs.readFileSync(cached);
-  const data = fs.readFileSync(abs);
-  const soup = /\.stl$/i.test(rel) ? stlTriangles(data) : /\.3mf$/i.test(rel) ? threeMfTriangles(data) : new Float32Array();
-  if (!soup.length) throw new HttpError(404, "Sem imagem para este arquivo");
-  const color = entry.info?.filaments[0]?.color ?? "#8fb39a";
-  const png = await renderPreview(soup, /^#[0-9a-f]{6}$/i.test(color) ? color : "#8fb39a");
-  fs.mkdirSync(path.dirname(cached), { recursive: true });
-  fs.writeFileSync(cached, png);
-  return png;
+  const entry = fileInfo(slug, rel, abs, fs.statSync(abs));
+  const w = Math.max(0, Math.min(1600, Math.round(width) || 0));
+  const dir = path.join(projectDir(slug), CACHE, "pictures");
+  const [file, version] = [hash(rel), hash(entry.key)];
+  const target = path.join(dir, `${file}-${version}-${plate}-${w}.png`);
+  if (fs.existsSync(target)) return fs.readFileSync(target);
+
+  return once(target, async () => {
+    const thumb = entry.info?.plates.find((p) => p.plate === plate)?.thumb ?? entry.info?.plates.find((p) => p.thumb)?.thumb;
+    let png = thumb ? plateImage(abs, thumb) : null;
+    if (!png) {
+      const rendered = path.join(dir, `${file}-${version}-render.png`);
+      png = fs.existsSync(rendered) ? fs.readFileSync(rendered) : await once(rendered, () => oneRenderAtATime(async () => {
+        const kind = modelKind(rel);
+        const meshes = kind ? await modelMeshesFile(abs, kind) : [];
+        if (!meshes.some((m) => m.soup.length)) throw new HttpError(404, "Sem imagem para este arquivo");
+        const color = entry.info?.filaments[0]?.color ?? "#8fb39a";
+        const out = await renderPreview(meshes, /^#[0-9a-f]{6}$/i.test(color) ? color : "#8fb39a");
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(rendered, out);
+        return out;
+      }));
+    }
+    if (w) png = await sharp(png).resize({ width: w, withoutEnlargement: true }).png().toBuffer();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(target, png);
+    for (const old of fs.readdirSync(dir)) if (old.startsWith(`${file}-`) && !old.startsWith(`${file}-${version}-`)) fs.rmSync(path.join(dir, old), { force: true });
+    return png;
+  });
 }
 
 // ------------------------------------------------------------------------------------------------------- actions
