@@ -28,6 +28,7 @@ import { action, reportError } from "@/lib/client/api";
 import type { CostSettings } from "@/lib/costing";
 import type { Project, ProjectMeta } from "@/lib/library";
 import { formatSize } from "@/lib/text";
+import { CoverPicker } from "./CoverPicker";
 import { ExtrasEditor } from "./ExtrasEditor";
 import { SalePricesEditor } from "./SalePricesEditor";
 import { SizeEditor } from "./SizeEditor";
@@ -43,6 +44,8 @@ export default function ProjectView({ slug }: { slug: string }) {
   const [link, setLink] = useState("");
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
+  /** Bumped when photos are sent from here, so the cover picker shows them. */
+  const [studioTick, setStudioTick] = useState(0);
 
   const reload = useCallback(async () => {
     try {
@@ -107,7 +110,8 @@ export default function ProjectView({ slug }: { slug: string }) {
   const ready = project.files.filter((f) => f.info?.configured);
   const others = project.files.filter((f) => !f.info?.configured);
   const options = [...new Set([...categories, ...project.categories])].map((c) => ({ value: c, label: c }));
-  const isCover = (rel: string) => project.cover?.file === rel;
+  const isCover = (rel: string) => !!project.cover && "file" in project.cover && project.cover.file === rel;
+  const coverVersion = [JSON.stringify(project.cover), studioTick, ...project.files.map((f) => `${f.rel}:${f.modifiedAt}`)].join("|");
   const mainCost = ready.map((f) => (f.slice?.status === "done" ? f.slice.cost : null)).find(Boolean) ?? null;
   const offPattern = project.files.filter((f) => f.type !== "other" && !f.standardName);
   const card = (f: Project["files"][number]) => <PrintFileCard key={f.rel} slug={slug} file={f} isCover={isCover(f.rel)} piecesPerObject={project.pieces} onChanged={reload} />;
@@ -174,6 +178,10 @@ export default function ProjectView({ slug }: { slug: string }) {
         </Card>
       )}
 
+      <FormSection title="Capa" hint="A imagem que aparece no card da biblioteca. Pode ser uma mesa do arquivo 3D, uma foto que você enviou ou uma imagem feita no estúdio.">
+        <CoverPicker project={slug} chosen={project.coverChosen} version={coverVersion} onChanged={reload} />
+      </FormSection>
+
       <FormSection title="Prontos para imprimir" hint="3MF salvos no fatiador com impressora e filamento. Um arquivo por impressora ou material (ex.: Ender PLA, K1 PETG).">
         {ready.length ? ready.map(card) : <p className="text-sm text-ink-muted">Nenhum ainda. Abra um arquivo original no fatiador, configure e salve o projeto (3MF) na pasta <Code>fatiados</Code> deste projeto.</p>}
       </FormSection>
@@ -183,7 +191,7 @@ export default function ProjectView({ slug }: { slug: string }) {
       </FormSection>
 
       <FormSection title="Fotos e imagens" hint="Fotos do produto impresso para o estúdio de imagens. O projeto é o mesmo lá: não precisa criar de novo.">
-        <StudioSection project={slug} singlePiece={project.object.measured?.pieces === 1} />
+        <StudioSection project={slug} singlePiece={project.object.measured?.pieces === 1} onChanged={() => setStudioTick((t) => t + 1)} />
       </FormSection>
 
       <FormSection title="Arquivos originais" hint="Como vieram do MakerWorld ou de outro site, antes de configurar.">

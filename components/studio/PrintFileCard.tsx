@@ -78,7 +78,7 @@ export function PrintFileCard({ slug, file, isCover, piecesPerObject, onChanged 
           >
             {(close) => (
               <>
-                <MenuItem onClick={() => (close(), run("update_library_project", { file: undefined, cover: { file: file.rel, plate } }))}>
+                <MenuItem onClick={() => (close(), run("set_library_cover", { file: undefined, cover: { file: file.rel, plate } }))}>
                   <Icon icon={ImageIcon} /> Usar esta imagem como capa
                 </MenuItem>
                 {configured && (

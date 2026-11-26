@@ -264,3 +264,62 @@ describe("library ↔ image studio", () => {
   });
 });
 
+
+describe("project cover", () => {
+  it("keeps covers saved by older versions and falls back to the first plate when the chosen one is gone", async () => {
+    const slug = lib.createProject("Capa antiga");
+    const [file] = lib.addProjectFiles(slug, [{ name: "a.3mf", data: await threeMf(true) }]);
+    const dir = lib.projectDir(slug);
+    const meta = JSON.parse(fs.readFileSync(path.join(dir, "projeto.json"), "utf8"));
+    fs.writeFileSync(path.join(dir, "projeto.json"), JSON.stringify({ ...meta, cover: { file, plate: 2 } }));
+    expect(lib.getProject(slug)).toMatchObject({ cover: { file, plate: 2 }, coverChosen: true });
+    fs.writeFileSync(path.join(dir, "projeto.json"), JSON.stringify({ ...meta, cover: { image: "real/sumiu.jpg" } }));
+    expect(lib.getProject(slug)).toMatchObject({ cover: { file, plate: 1 }, coverChosen: false });
+    fs.writeFileSync(path.join(dir, "projeto.json"), JSON.stringify({ ...meta, cover: "lixo" }));
+    expect(lib.readProjectMeta(slug).cover).toBeNull();
+  });
+
+  it("chooses the cover among plates, photos sent and studio images; the card goes through plates and photos", async () => {
+    const studio = await import("@/lib/library-studio");
+    const products = await import("@/lib/products");
+    const { SUBDIRS } = await import("@/lib/paths");
+    const slug = lib.createProject("Capa nova");
+    const [file] = lib.addProjectFiles(slug, [{ name: "a.3mf", data: await threeMf(true) }]);
+    const product = studio.ensureStudioProduct(slug);
+    const jpg = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#a44" } }).jpeg().toBuffer();
+    const photo = products.saveUpload(product, "real", "foto.jpg", jpg);
+    const approvedDir = path.join(products.locateProduct(product)!.dir, SUBDIRS.approved);
+    fs.mkdirSync(approvedDir, { recursive: true });
+    fs.writeFileSync(path.join(approvedDir, "cena.jpg"), jpg);
+
+    // Default: first plate of the ready file, then the other plate, the photo and the approved image.
+    const all = lib.projectPictures(slug);
+    expect(all.cover).toEqual({ file, plate: 1 });
+    expect(all.pictures.map((p) => p.source)).toEqual(["file", "file", "photo", "generated"]);
+    expect(all.pictures[0].cover).toBe(true);
+    const summary = () => lib.listProjects().find((p) => p.slug === slug)!;
+    expect(summary().pictures).toBe(lib.projectPictures(slug, { all: false }).pictures.length);
+    expect(summary().pictures).toBe(3);
+
+    // A studio image as cover: first in both lists, even where studio images are not listed.
+    expect(lib.setProjectCover(slug, { image: "approved/cena.jpg" })).toEqual({ image: "approved/cena.jpg" });
+    const card = lib.projectPictures(slug, { all: false }).pictures;
+    expect(card.map((p) => [p.source, p.cover])).toEqual([["generated", true], ["file", false], ["file", false], ["photo", false]]);
+    expect(summary()).toMatchObject({ cover: { image: "approved/cena.jpg" }, pictures: 4 });
+    expect(lib.projectImageFile(slug, "approved/cena.jpg")).toBe(path.join(approvedDir, "cena.jpg"));
+
+    lib.setProjectCover(slug, { image: photo });
+    expect(lib.projectPictures(slug).pictures[0]).toMatchObject({ source: "photo", image: photo, cover: true });
+    lib.setProjectCover(slug, { file, plate: 2 });
+    expect(lib.projectPictures(slug).pictures[0]).toMatchObject({ source: "file", plate: 2, cover: true });
+
+    // Only images of the linked product's photo/approved folders, and only files that exist.
+    expect(() => lib.setProjectCover(slug, { image: "style-refs/x.jpg" })).toThrow(/não encontrada/);
+    expect(() => lib.setProjectCover(slug, { image: "../../outro/real/x.jpg" })).toThrow(/não encontrada/);
+    expect(() => lib.projectImageFile(slug, "real/../../../segredo.jpg")).toThrow(/não encontrada/);
+    expect(() => lib.setProjectCover(slug, { file: "fatiados/nada.3mf", plate: 1 })).toThrow(/não encontrado/);
+
+    expect(lib.setProjectCover(slug, null)).toEqual({ file, plate: 1 });
+    expect(lib.getProject(slug).coverChosen).toBe(false);
+  });
+});
