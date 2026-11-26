@@ -578,7 +578,7 @@ describe("library background work", () => {
   });
 
   it("slices models with painted colours again without the painting when the slicer crashes on them", async () => {
-    const { setSlicerSettings, sliceFile, withoutColorPainting } = await import("@/lib/slicer");
+    const { setSlicerSettings, sliceFile, singleColorCopy } = await import("@/lib/slicer");
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "paint-slicer-"));
     const fake = path.join(dir, "CrealityPrint-fake.sh");
     // Like Creality Print: crashes on painted triangles (the model is stored uncompressed, so grep sees it).
@@ -598,7 +598,7 @@ describe("library background work", () => {
       expect(stats).toMatchObject({ paintIgnored: true, grams: [20, 0], seconds: 3600 });
       // the copy keeps everything but the painting, and nothing is left behind
       const copy = path.join(dir, "copia.3mf");
-      expect(withoutColorPainting(painted, copy)).toBe(true);
+      expect(singleColorCopy(painted, copy)).toBe(true);
       const zip = new Zip(copy);
       expect(zip.text("3D/Objects/object_1.model")).toBe(mesh.replaceAll(/ paint_color="[^"]*"/g, ""));
       expect(zip.text("Metadata/plate_1.png")).toBe("png");
@@ -607,8 +607,17 @@ describe("library background work", () => {
       // a plain model is not copied; a crash on it says so in plain words
       const plain = path.join(dir, "liso.3mf");
       fs.writeFileSync(plain, zipSync({ "3D/Objects/object_1.model": [strToU8(mesh.replaceAll("paint_color", "x")), { level: 0 }] }));
-      expect(withoutColorPainting(plain, path.join(dir, "nada.3mf"))).toBe(false);
+      expect(singleColorCopy(plain, path.join(dir, "nada.3mf"))).toBe(false);
       expect(fs.existsSync(path.join(dir, "nada.3mf"))).toBe(false);
+      // colour changes per layer height crash it too: the copy leaves them out
+      const layered = path.join(dir, "casinha.3mf");
+      const changes = '<custom_gcodes_per_layer><plate><plate_info id="1"/><layer top_z="2.4" type="2" extruder="4" gcode="tool_change"/></plate></custom_gcodes_per_layer>';
+      fs.writeFileSync(layered, zipSync({ "3D/Objects/object_1.model": strToU8("<model/>"), "Metadata/custom_gcode_per_layer.xml": strToU8(changes) }));
+      const single = path.join(dir, "casinha-uma-cor.3mf");
+      expect(singleColorCopy(layered, single)).toBe(true);
+      const z2 = new Zip(single);
+      expect(z2.names()).toEqual(["3D/Objects/object_1.model"]);
+      z2.close();
       fs.writeFileSync(fake, `#!/bin/sh\necho 'terminate called "/log"' >&2\nexit 134\n`);
       await expect(sliceFile(plain)).rejects.toThrow(/travou ao fatiar/);
     } finally {

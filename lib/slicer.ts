@@ -75,7 +75,8 @@ export type SliceStats = {
   filaments: { type: string; color: string; settingsId: string; costPerKg: number }[];
   slicer: string;
   /**
-   * The model has colours painted on it and the slicer crashed on them, so it was sliced as a single colour: total
+   * The model changes colour (painted on it, or per layer height) and the slicer crashed on that, so it was sliced
+   * as a single colour: total
    * grams and time stay close, but the split per colour and the filament swaps are not counted.
    */
   paintIgnored?: boolean;
@@ -137,8 +138,8 @@ const CRASHED = /terminate called|core dumped|Segmentation fault|"\/log"/i;
 /**
  * Slices every plate of a 3MF with its own settings, in the background (no window), and reads the statistics.
  * The slicer runs with low priority, so the computer (and the browser) stay responsive while it works.
- * Creality Print crashes slicing models with painted colours from the command line; those are sliced again without
- * the painting (see `paintIgnored`).
+ * Creality Print crashes slicing models that change colour (painted, or per layer) from the command line; those are
+ * sliced again as a single colour (see `paintIgnored`).
  */
 export async function sliceFile(file: string, timeoutMs = 10 * 60_000): Promise<SliceStats> {
   try {
@@ -147,7 +148,7 @@ export async function sliceFile(file: string, timeoutMs = 10 * 60_000): Promise<
     const crashed = CRASHED.test((err as Error).message);
     const plain = crashed ? path.join(sliceDir(), `sem-pintura-${process.pid}-${Date.now()}.3mf`) : null;
     try {
-      if (plain && withoutColorPainting(file, plain)) return { ...(await runSlicer(plain, timeoutMs)), paintIgnored: true };
+      if (plain && singleColorCopy(file, plain)) return { ...(await runSlicer(plain, timeoutMs)), paintIgnored: true };
     } finally {
       if (plain) fs.rmSync(plain, { force: true });
     }
@@ -156,16 +157,20 @@ export async function sliceFile(file: string, timeoutMs = 10 * 60_000): Promise<
   }
 }
 
+/** Colour changes at given layer heights ("tool_change"/"PAUSE" per plate), which also crash Creality Print's CLI. */
+const LAYER_CHANGES = "Metadata/custom_gcode_per_layer.xml";
+
 /**
- * Copies a 3MF without its painted colours (`paint_color` on the triangles), one entry at a time.
- * Returns false (and writes nothing) when there is no painting.
+ * Copies a 3MF as a single-colour model, one entry at a time: without its painted colours (`paint_color` on the
+ * triangles) and without colour changes per layer. Returns false (and writes nothing) when it has neither.
  */
-export function withoutColorPainting(src: string, dst: string): boolean {
+export function singleColorCopy(src: string, dst: string): boolean {
   const zip = new Zip(src);
   const NEEDLE = Buffer.from(' paint_color="');
   try {
     const models = zip.names().filter((n) => n.endsWith(".model"));
-    if (!models.some((n) => zip.read(n)?.includes(NEEDLE))) return false;
+    const layerChanges = /<layer\b/.test(zip.text(LAYER_CHANGES) ?? "");
+    if (!layerChanges && !models.some((n) => zip.read(n)?.includes(NEEDLE))) return false;
     const fd = fs.openSync(dst, "w");
     try {
       const out = new ZipWriter((e, chunk) => {
@@ -173,6 +178,7 @@ export function withoutColorPainting(src: string, dst: string): boolean {
         fs.writeSync(fd, chunk);
       });
       for (const name of zip.names()) {
+        if (name === LAYER_CHANGES) continue;
         let data = zip.read(name);
         if (!data) continue;
         if (name.endsWith(".model")) {

@@ -123,7 +123,7 @@ export function PrintFileCard({ slug, file, isCover, piecesPerObject, onChanged 
             </div>
             {done.stats.paintIgnored && (
               <p className="text-xs text-ink-muted">
-                Este modelo tem cores pintadas e o Creality Print trava ao calcular assim. Calculei como uma cor só: o total de gramas e o tempo ficam bem próximos, mas as trocas de filamento não entram.
+                Este modelo troca de cor (pintura ou troca por altura de camada) e o Creality Print trava ao calcular assim. Calculei como uma cor só: o total de gramas e o tempo ficam bem próximos, mas as trocas de filamento não entram.
               </p>
             )}
             {used.length > 0 && (
